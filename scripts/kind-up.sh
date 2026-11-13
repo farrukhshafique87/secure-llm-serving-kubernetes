@@ -18,6 +18,8 @@ kubectl config use-context "kind-$CLUSTER"
 if ! kubectl get ns calico-system >/dev/null 2>&1; then
   kubectl apply --server-side --force-conflicts -f \
     "https://raw.githubusercontent.com/projectcalico/calico/${CALICO_VERSION}/manifests/tigera-operator.yaml"
+  # The CRD appears a moment after the apply; wait on a missing CRD fails at once.
+  until kubectl get crd installations.operator.tigera.io >/dev/null 2>&1; do sleep 2; done
   kubectl wait --for=condition=established crd/installations.operator.tigera.io --timeout=90s
   kubectl apply -f kind/calico-installation.yaml
 fi
