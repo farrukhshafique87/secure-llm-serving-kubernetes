@@ -269,7 +269,7 @@ The Calico version is not in that file; it was read from the same Kind cluster o
 | Application | Python 3.12, FastAPI 0.116.1, httpx, Prometheus client |
 | LLM runtime | Ollama 0.35.1 (image pinned by digest), model qwen2.5:0.5b |
 | Containers | Docker 29.6.2 |
-| Kubernetes | Kind v0.23.0, Kubernetes v1.31.0, Calico v3.32.2 (tigera-operator v1.42.6), Kustomize v5.8.1 |
+| Kubernetes | Kind v0.33.0, Kubernetes v1.36.4 (EXP-01 to EXP-06 ran on Kind v0.23.0, Kubernetes v1.31.0), Calico v3.32.2 (tigera-operator v1.42.6), Kustomize v5.8.1 |
 | Security | RBAC, NetworkPolicies, Linkerd edge-26.10.1 (mTLS), Traefik v3.7.13 (TLS), own FastAPI gateway |
 | Installed with Helm v3.21.3 | Traefik (chart 41.6.1), Linkerd (chart 2026.10.1) |
 | Observability | Prometheus v3.5.0, Grafana 12.1.1, metrics-server v0.9.0 |
