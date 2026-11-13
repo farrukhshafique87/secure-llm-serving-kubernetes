@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 # Functional checks of the security controls in one namespace.
-# Usage: verify-controls.sh <namespace>
+# Usage: verify-controls.sh <namespace> [entry-url]
 # Checks only what is deployed in the namespace (RBAC objects, NetworkPolicies,
-# gateway). Exit code 1 if any check fails, 2 if the pods never become Ready.
+# mesh, ingress TLS, gateway). The TLS and gateway checks send requests to the
+# entry URL from outside the cluster, as a client would; without a URL they are
+# skipped. Exit code 1 if any check fails, 2 if the pods never become Ready.
 # A failing check prints the last lines of the command output, so the cause is
 # recorded (a check that hides its error cannot be explained afterwards).
 set -uo pipefail
-NS="${1:?usage: verify-controls.sh <namespace>}"
+cd "$(dirname "$0")/.."
+NS="${1:?usage: verify-controls.sh <namespace> [entry-url]}"
+URL="${2:-}"
 PASS=0
 FAIL=0
 
@@ -89,6 +93,52 @@ if mesh_enabled; then
   check "ollama pod runs the Linkerd proxy" yes has_proxy app=ollama
   fetch fastapi http://ollama-service:11434/api/tags >/dev/null 2>&1
   check "api -> ollama traffic is mTLS (proxy metrics)" yes tls_seen
+fi
+
+# HTTP status code of a request from the host; prints it so a failure shows it.
+status_is() {
+  local want="$1" got
+  shift
+  got=$(curl -sk --max-time 5 -o /dev/null -w '%{http_code}' "$@")
+  echo "HTTP $got"
+  [ "$got" = "$want" ]
+}
+
+AUTH_ARGS=()
+if [ -n "$URL" ] && kubectl -n "$NS" get deploy gateway >/dev/null 2>&1; then
+  echo "== API gateway"
+  # The key goes to curl through a private header file, never on the command line.
+  HDR=$(mktemp)
+  trap 'rm -f "$HDR"' EXIT
+  chmod 600 "$HDR"
+  echo "Authorization: Bearer $(grep '^API_KEY=' kubernetes/components/gateway/gateway.env | cut -d= -f2)" > "$HDR"
+  AUTH_ARGS=(-H "@$HDR")
+  check "request without key is rejected (401)" yes status_is 401 "$URL/health"
+  check "request with a wrong key is rejected (401)" yes status_is 401 -H "Authorization: Bearer wrong-key" "$URL/health"
+  check "request with the key is accepted (200)" yes status_is 200 "${AUTH_ARGS[@]}" "$URL/health"
+  check "/metrics is blocked even with the key (404)" yes status_is 404 "${AUTH_ARGS[@]}" "$URL/metrics"
+  check "/docs is blocked even with the key (404)" yes status_is 404 "${AUTH_ARGS[@]}" "$URL/docs"
+fi
+
+served_cert_is_lab_cert() {
+  local served expected
+  served=$(openssl s_client -connect "$1" -servername "${1%:*}" </dev/null 2>/dev/null \
+    | openssl x509 -noout -fingerprint -sha256)
+  expected=$(openssl x509 -in kubernetes/components/ingress-tls/tls.crt -noout -fingerprint -sha256)
+  echo "served: ${served:-none}"
+  [ -n "$served" ] && [ "$served" = "$expected" ]
+}
+
+if [[ "$URL" == https://* ]] && kubectl -n "$NS" get ingress -o name 2>/dev/null | grep -q .; then
+  echo "== TLS at the ingress"
+  HOSTPORT="${URL#https://}"
+  check "entry presents the lab certificate" yes served_cert_is_lab_cert "$HOSTPORT"
+  check "HTTPS request reaches the service (200)" yes status_is 200 "${AUTH_ARGS[@]}" "$URL/health"
+  check "plain HTTP on the TLS port is not served (no 200)" no status_is 200 "${AUTH_ARGS[@]}" "http://$HOSTPORT/health"
+  # Kind maps Traefik's plain-HTTP entrypoint to this port; the Ingress uses only websecure.
+  HTTP_ENTRY="${HTTP_ENTRY:-http://localhost:8080}"
+  check "plain HTTP entrypoint does not route to the service (no 200)" no \
+    status_is 200 -H "Host: ${HOSTPORT%:*}" "${AUTH_ARGS[@]}" "$HTTP_ENTRY/health"
 fi
 
 echo
