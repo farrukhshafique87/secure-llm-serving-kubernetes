@@ -9,8 +9,9 @@ resources:
   - ../../base
 
 components:
-  - ../../components/kind-placement
   - ../../components/gateway
+  # After gateway: a component can only patch objects added before it.
+  - ../../components/kind-placement
   - ../../components/ingress-tls
   - ../../components/rbac
   - ../../components/network-policies
