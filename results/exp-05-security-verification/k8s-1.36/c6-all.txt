@@ -1,0 +1,31 @@
+# c6-all 2026-11-13T23:26:54Z commit 0343226 kubernetes v1.36.4
+. scripts/lib/configs.sh && config_vars c6-all && ./scripts/verify-controls.sh "$NS" "$URL"
+Waiting for all pods in llm-secure to be Ready...
+== RBAC
+PASS  fastapi pod has no API token mounted
+PASS  fastapi service account cannot list pods
+PASS  viewer group can read pods
+PASS  viewer group cannot read secrets
+PASS  viewer group cannot delete deployments
+== NetworkPolicies
+PASS  api -> ollama is allowed
+PASS  api -> internet is blocked
+PASS  gateway -> api is allowed
+PASS  gateway -> ollama is blocked
+== mTLS (Linkerd)
+PASS  api pod runs the Linkerd proxy
+PASS  ollama pod runs the Linkerd proxy
+PASS  api -> ollama traffic is mTLS (proxy metrics)
+== API gateway
+PASS  request without key is rejected (401)
+PASS  request with a wrong key is rejected (401)
+PASS  request with the key is accepted (200)
+PASS  /metrics is blocked even with the key (404)
+PASS  /docs is blocked even with the key (404)
+== TLS at the ingress
+PASS  entry presents the lab certificate
+PASS  HTTPS request reaches the service (200)
+PASS  plain HTTP on the TLS port is not served (no 200)
+PASS  plain HTTP entrypoint does not route to the service (no 200)
+
+passed: 21  failed: 0

@@ -1,0 +1,5 @@
+# c0-baseline 2026-11-13T23:24:22Z commit 0343226 kubernetes v1.36.4
+. scripts/lib/configs.sh && config_vars c0-baseline && ./scripts/verify-controls.sh "$NS" "$URL"
+Waiting for all pods in llm-baseline to be Ready...
+
+passed: 0  failed: 0

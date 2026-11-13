@@ -1,0 +1,9 @@
+# c3-mtls 2026-11-13T23:25:42Z commit 0343226 kubernetes v1.36.4
+. scripts/lib/configs.sh && config_vars c3-mtls && ./scripts/verify-controls.sh "$NS" "$URL"
+Waiting for all pods in llm-c3-mtls to be Ready...
+== mTLS (Linkerd)
+PASS  api pod runs the Linkerd proxy
+PASS  ollama pod runs the Linkerd proxy
+PASS  api -> ollama traffic is mTLS (proxy metrics)
+
+passed: 3  failed: 0

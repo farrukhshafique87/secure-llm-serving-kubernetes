@@ -1,0 +1,10 @@
+# c4-tls 2026-11-13T23:26:06Z commit 0343226 kubernetes v1.36.4
+. scripts/lib/configs.sh && config_vars c4-tls && ./scripts/verify-controls.sh "$NS" "$URL"
+Waiting for all pods in llm-c4-tls to be Ready...
+== TLS at the ingress
+PASS  entry presents the lab certificate
+PASS  HTTPS request reaches the service (200)
+PASS  plain HTTP on the TLS port is not served (no 200)
+PASS  plain HTTP entrypoint does not route to the service (no 200)
+
+passed: 4  failed: 0
