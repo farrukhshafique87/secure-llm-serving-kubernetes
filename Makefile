@@ -91,7 +91,7 @@ resume:
 	$(CFG) && ./scripts/resume-env.sh "kubernetes/overlays/$$OVERLAY" "$$NS"
 
 verify:
-	$(CFG) && ./scripts/verify-controls.sh "$$NS"
+	$(CFG) && ./scripts/verify-controls.sh "$$NS" "$$URL"
 
 # make measure CONFIG=c1-rbac REP=1
 measure:
