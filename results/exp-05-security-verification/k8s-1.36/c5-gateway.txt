@@ -1,0 +1,11 @@
+# c5-gateway 2026-11-13T23:26:30Z commit 0343226 kubernetes v1.36.4
+. scripts/lib/configs.sh && config_vars c5-gateway && ./scripts/verify-controls.sh "$NS" "$URL"
+Waiting for all pods in llm-c5-gateway to be Ready...
+== API gateway
+PASS  request without key is rejected (401)
+PASS  request with a wrong key is rejected (401)
+PASS  request with the key is accepted (200)
+PASS  /metrics is blocked even with the key (404)
+PASS  /docs is blocked even with the key (404)
+
+passed: 5  failed: 0

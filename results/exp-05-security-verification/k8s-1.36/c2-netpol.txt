@@ -1,0 +1,8 @@
+# c2-netpol 2026-11-13T23:25:09Z commit 0343226 kubernetes v1.36.4
+. scripts/lib/configs.sh && config_vars c2-netpol && ./scripts/verify-controls.sh "$NS" "$URL"
+Waiting for all pods in llm-c2-netpol to be Ready...
+== NetworkPolicies
+PASS  api -> ollama is allowed
+PASS  api -> internet is blocked
+
+passed: 2  failed: 0

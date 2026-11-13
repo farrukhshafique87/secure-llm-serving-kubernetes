@@ -1,0 +1,11 @@
+# c1-rbac 2026-11-13T23:24:45Z commit 0343226 kubernetes v1.36.4
+. scripts/lib/configs.sh && config_vars c1-rbac && ./scripts/verify-controls.sh "$NS" "$URL"
+Waiting for all pods in llm-c1-rbac to be Ready...
+== RBAC
+PASS  fastapi pod has no API token mounted
+PASS  fastapi service account cannot list pods
+PASS  viewer group can read pods
+PASS  viewer group cannot read secrets
+PASS  viewer group cannot delete deployments
+
+passed: 5  failed: 0

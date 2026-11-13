@@ -215,6 +215,20 @@ Before measuring, each control was tested with [`scripts/verify-controls.sh`](sc
 
 Evidence: [`results/exp-05-security-verification/`](results/exp-05-security-verification/).
 
+Re-run on Kubernetes v1.36.4 (2026-11-13), after the gateway placement fix and with live
+checks of the ingress TLS and the gateway from outside the cluster:
+
+| Configuration | Checks passed | New checks |
+| --- | --- | --- |
+| C1 RBAC | 5 of 5 | - |
+| C2 NetworkPolicies | 2 of 2 | - |
+| C3 mTLS | 3 of 3 | - |
+| C4 TLS | 4 of 4 | entry presents the lab certificate; plain HTTP does not reach the service |
+| C5 gateway | 5 of 5 | no or wrong key 401; valid key 200; `/metrics` and `/docs` 404 even with the key |
+| C6 all | 21 of 21 | all of the above |
+
+Evidence: [`results/exp-05-security-verification/k8s-1.36/`](results/exp-05-security-verification/k8s-1.36/).
+
 ## Limitations
 
 - **One local machine.** All results come from Kind on one WSL2 host. They do not
