@@ -374,3 +374,58 @@ during bursts from about 80 req/s in this session.
 gateway was throttled for only 0.9 % (it used 562 m on average). This collapse
 is not caused by the CPU limit. Candidates are the single uvicorn process of the
 gateway or the CPU of the host, which also runs k6; neither was measured here.
+
+## 11. EXP-06 re-run on Kubernetes v1.36
+
+EXP-07 runs on AKS, which no longer offers Kubernetes 1.31. To compare Kind and AKS
+on the same Kubernetes minor version (RQ2), EXP-06 is repeated on Kind with
+Kubernetes v1.36. The re-run is a new experiment with its own folder; the
+original EXP-06 results stay unchanged.
+
+### 11.1 What changed since EXP-06
+
+| Item | EXP-06 (2026-10-08/09) | Re-run |
+| ---- | ---------------------- | ------ |
+| Kind / Kubernetes | v0.23.0 / v1.31.0 | v0.33.0 / v1.36.4 (node image pinned by digest) |
+| Gateway placement | not pinned; scheduled on the inference node next to Ollama | pinned to the api node (fix in PR #27) |
+| `llm-api` image | `llm-api:1.0.0`, built before 2026-10-08 | `llm-api:1.0.0`, digest `58870146…`, rebuilt 2026-10-15 from unchanged sources |
+
+Unchanged: model `qwen2.5:0.5b` (ID `a8b0c5157701`), Ollama image digest, gateway
+image `f6a6da4d…`, inference parameters, resource requests and limits, Calico,
+Linkerd, Traefik and metrics-server versions, k6 scripts and the protocol below.
+Every control was verified on v1.36.4 before the runs (EXP-05 re-run, 40 of 40
+checks, `results/exp-05-security-verification/k8s-1.36/`).
+
+### 11.2 Design
+
+As EXP-06: all seven configurations, `/chat` (1 VU, 5 min measured, 2 min warm-up)
+and `/health` (50 req/s, 2 min measured, 2 min warm-up), `MONITOR=0` as in EXP-06,
+3 repetitions. The order of the configurations rotates per repetition:
+
+| Repetition | Order |
+| ---------- | ----- |
+| 1 | c0 c1 c2 c3 c4 c5 c6 |
+| 2 | c3 c4 c5 c6 c0 c1 c2 |
+| 3 | c5 c6 c0 c1 c2 c3 c4 |
+
+Command: `EXP=exp-06-k8s-1.36 make measure CONFIG=<config> REP=<n>`.
+Results: `results/exp-06-k8s-1.36/`; tables: `scripts/overhead_table.py`.
+
+### 11.3 Hypotheses (stated before the runs)
+
+* **H6.1 (`/health`, verdicts).** Every configuration gets the same verdict as
+  in EXP-06: C1 and C2 within noise; C3, C4, C5 and C6 distinct, higher.
+* **H6.2 (`/health`, ranking).** The single controls keep their order of added
+  latency: mTLS < TLS < gateway, and C6 adds more than any single control.
+* **H6.3 (`/chat`).** No configuration is distinct, higher than the baseline;
+  the cost of the controls stays hidden by inference.
+* **H6.4 (resources).** On `/health`, C1 and C2 add no CPU or memory beyond a
+  few millicores or MiB, and the gateway adds the most CPU of the single controls.
+
+### 11.4 How the result is read
+
+The verdict rule of §6 applies unchanged. Differences to EXP-06 are reported but
+not attributed to one cause: the Kubernetes version and the gateway placement
+changed together, so a difference between the two experiments cannot be
+assigned to either alone. The re-run, not EXP-06, is the Kind reference for
+EXP-07.
