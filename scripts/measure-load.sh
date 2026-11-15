@@ -28,7 +28,10 @@ export EXP="${EXP:-exp-02-load}"
 cd "$(dirname "$0")/.."
 # shellcheck source=lib/configs.sh
 . scripts/lib/configs.sh
+# shellcheck source=lib/run-lock.sh
+. scripts/lib/run-lock.sh
 
+run_lock
 switch_config "$CONFIG"
 
 for path in $PATHS; do
