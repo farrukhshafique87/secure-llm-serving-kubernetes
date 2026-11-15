@@ -16,6 +16,11 @@ config_vars() {
     c6-all)      OVERLAY=kind-secure;     NS=llm-secure;     URL=https://localhost:8443; AUTH=yes ;;
     # EXP-04: c5-gateway with the gateway CPU limit at 1000 m (same namespace).
     c5-gateway-cpu1000) OVERLAY=kind-c5-gateway-cpu1000; NS=llm-c5-gateway; URL=http://localhost:8010; AUTH=yes ;;
+    # EXP-03: 2 or 3 replicas of fastapi (c0) and of gateway and fastapi (c5, 1000 m).
+    c0-baseline-r2) OVERLAY=kind-baseline-r2; NS=llm-baseline; URL=http://localhost:8010; AUTH=no ;;
+    c0-baseline-r3) OVERLAY=kind-baseline-r3; NS=llm-baseline; URL=http://localhost:8010; AUTH=no ;;
+    c5-gateway-cpu1000-r2) OVERLAY=kind-c5-gateway-cpu1000-r2; NS=llm-c5-gateway; URL=http://localhost:8010; AUTH=yes ;;
+    c5-gateway-cpu1000-r3) OVERLAY=kind-c5-gateway-cpu1000-r3; NS=llm-c5-gateway; URL=http://localhost:8010; AUTH=yes ;;
     *) echo "unknown config: $1" >&2; return 1 ;;
   esac
 }
