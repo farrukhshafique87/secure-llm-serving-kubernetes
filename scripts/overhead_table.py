@@ -32,6 +32,10 @@ PATH_PODS = {
     "c4-tls": ["fastapi", "traefik"],
     "c5-gateway": ["fastapi", "gateway"],
     "c5-gateway-cpu1000": ["fastapi", "gateway"],
+    "c0-baseline-r2": ["fastapi"],
+    "c0-baseline-r3": ["fastapi"],
+    "c5-gateway-cpu1000-r2": ["fastapi", "gateway"],
+    "c5-gateway-cpu1000-r3": ["fastapi", "gateway"],
     "c6-all": [
         "fastapi",
         "gateway",
@@ -66,7 +70,8 @@ def values(runs: list[dict], metric: str, field: str) -> list[float]:
 
 
 def pod_cpu_mem(runs: list[dict]) -> dict[str, tuple[float, float]]:
-    """Mean over runs of the per-run mean CPU (m) and memory (Mi) of every pod."""
+    """Mean over runs of the per-run mean CPU (m) and memory (Mi) per Deployment
+    (all replicas added up)."""
     per_pod: dict[str, dict[str, list[float]]] = defaultdict(
         lambda: {"cpu": [], "mem": []}
     )
@@ -79,6 +84,9 @@ def pod_cpu_mem(runs: list[dict]) -> dict[str, tuple[float, float]]:
         )
         for line in res.read_text().splitlines():
             _, _, rest = line.partition(" ")
+            # Replicas of one Deployment are added up within a sample, so a
+            # value is the total of the Deployment, not of a single pod.
+            total: dict[str, list[float]] = defaultdict(lambda: [0.0, 0.0])
             for segment in rest.split(";"):
                 parts = segment.split()
                 if (
@@ -87,8 +95,11 @@ def pod_cpu_mem(runs: list[dict]) -> dict[str, tuple[float, float]]:
                     and parts[2].endswith("Mi")
                 ):
                     pod = parts[0].rsplit("-", 2)[0]
-                    samples[pod]["cpu"].append(float(parts[1][:-1]))
-                    samples[pod]["mem"].append(float(parts[2][:-2]))
+                    total[pod][0] += float(parts[1][:-1])
+                    total[pod][1] += float(parts[2][:-2])
+            for pod, (cpu, mem) in total.items():
+                samples[pod]["cpu"].append(cpu)
+                samples[pod]["mem"].append(mem)
         for pod, s in samples.items():
             per_pod[pod]["cpu"].append(statistics.mean(s["cpu"]))
             per_pod[pod]["mem"].append(statistics.mean(s["mem"]))

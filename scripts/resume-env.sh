@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Start an environment again. Usage: resume-env.sh <overlay-dir> <namespace>
-# Re-applies the overlay (restores Ingress and replicas) and waits for the pods.
+# Re-applies the overlay (restores Ingress, NodePort and the replica counts of
+# the overlay) and waits for the pods.
 set -euo pipefail
 OVERLAY="${1:?usage: resume-env.sh <overlay-dir> <namespace>}"
 NS="${2:?usage: resume-env.sh <overlay-dir> <namespace>}"
@@ -18,10 +19,25 @@ for port in $(kubectl kustomize "$OVERLAY" | awk '/nodePort:/ {print $2}'); do
   fi
 done
 
+# "<deployment> <replicas>" for every Deployment in the overlay (1 if not set).
+# pause-env.sh scaled them to 0, and kubectl apply leaves a field alone when its
+# value in the manifest did not change, so the replicas are set explicitly.
+DEPLOYMENTS="$(kubectl kustomize "$OVERLAY" | awk '
+  function flush() {
+    if (kind == "Deployment" && name != "") print name, (rep == "" ? 1 : rep)
+    kind = name = rep = sec = ""
+  }
+  /^---/ { flush(); next }
+  /^[A-Za-z]/ { sec = $1 }
+  /^kind: / { kind = $2 }
+  sec == "metadata:" && /^  name: / && name == "" { name = $2 }
+  sec == "spec:" && /^  replicas: / { rep = $2 }
+  END { flush() }')"
+
 kubectl apply -k "$OVERLAY"
-kubectl -n "$NS" scale deploy --all --replicas=1
-kubectl -n "$NS" rollout status deploy/ollama --timeout=300s
-kubectl -n "$NS" rollout status deploy/fastapi --timeout=300s
-if kubectl -n "$NS" get deploy gateway >/dev/null 2>&1; then
-  kubectl -n "$NS" rollout status deploy/gateway --timeout=300s
-fi
+while read -r name replicas; do
+  kubectl -n "$NS" scale deploy "$name" --replicas="$replicas"
+done <<<"$DEPLOYMENTS"
+while read -r name _; do
+  kubectl -n "$NS" rollout status "deploy/$name" --timeout=300s
+done <<<"$DEPLOYMENTS"

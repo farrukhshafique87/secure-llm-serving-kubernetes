@@ -94,9 +94,14 @@ overhead. Kind and cloud results are reported separately (RQ2).
 | c5-gateway  | kind-c5-gateway | llm-c5-gateway | http://localhost:8010  | yes |
 | c6-all      | kind-secure     | llm-secure     | https://localhost:8443 | yes |
 | c5-gateway-cpu1000 | kind-c5-gateway-cpu1000 | llm-c5-gateway | http://localhost:8010 | yes |
+| c0-baseline-r2, -r3 | kind-baseline-r2, -r3 | llm-baseline | http://localhost:8010 | no |
+| c5-gateway-cpu1000-r2, -r3 | kind-c5-gateway-cpu1000-r2, -r3 | llm-c5-gateway | http://localhost:8010 | yes |
 
 c5-gateway-cpu1000 exists only for EXP-04 (§10): it is c5-gateway with the gateway
-CPU limit at 1000 m instead of 500 m and shares its namespace.
+CPU limit at 1000 m instead of 500 m and shares its namespace. The `-r2` and `-r3`
+configurations exist only for EXP-03 (§12): the same overlays with 2 or 3
+replicas of `fastapi` (c0) and of `gateway` and `fastapi` (c5); they share the
+namespace of their 1-replica version.
 
 C3 uses Linkerd. Only hops between meshed workloads use mTLS; Traefik is not
 meshed, so the hop from the ingress to the gateway is plain HTTP.
@@ -473,3 +478,87 @@ C6 adds +4.39 ms.
 **Against EXP-06.** The added latency of c3, c5 and c6 is 0.13 to 0.60 ms lower
 than in EXP-06; c1, c2 and c4 differ by 0.02 ms or less. Following §11.4 this is
 reported, not attributed to the Kubernetes version or the gateway placement.
+
+## 12. EXP-03 replicas
+
+EXP-04 left one limit open (§10.4): with a 1000 m CPU limit the gateway was
+hardly throttled, yet one of three runs at 150 req/s collapsed. Candidates are
+the single uvicorn process of the gateway and the CPU of the host. EXP-03 adds a
+second and a third replica of the services on the request path. If the single
+process is the limit, more replicas remove it; if the host is the limit, they
+do not. EXP-04 ran on Kubernetes v1.31 before the gateway was pinned to the api
+node; EXP-03 measures the 1-replica versions again in the same session on
+v1.36.4, so its comparison does not depend on the EXP-04 numbers.
+
+### 12.1 Design
+
+| Item          | Value                                                              |
+| ------------- | ------------------------------------------------------------------ |
+| Configs       | c0-baseline, -r2, -r3; c5-gateway-cpu1000, -r2, -r3               |
+| Replicas      | 1, 2 or 3 of `fastapi` (c0); 1, 2 or 3 of `gateway` and of `fastapi` (c5) |
+| Path          | `/health` only                                                     |
+| Levels        | 100, 150, 200 req/s                                                |
+| Run settings  | as EXP-02 (§9.1): 2 min, 30 s warm-up, 60 s cool-down              |
+| Repetitions   | 3, interleaved; the start configuration moves by two per repetition |
+| Monitoring    | `MONITOR=1` for every run                                          |
+
+Order per repetition (c5 = c5-gateway-cpu1000):
+r1 c0, c0-r2, c0-r3, c5, c5-r2, c5-r3; r2 c0-r3, c5, c5-r2, c5-r3, c0, c0-r2;
+r3 c5-r2, c5-r3, c0, c0-r2, c0-r3, c5. All six configurations are measured in
+the same session, so the comparison does not depend on the host speed of
+another day (§9.4).
+
+Ollama stays at one replica (its volume is ReadWriteOnce, and `/health` does not
+reach it). All replicas of a Deployment run on the same Kind node (`role=api`,
+`kind-placement`); all Kind nodes share the 8 CPUs of the host with k6, so the
+placement does not limit the CPU available to a replica. kube-proxy spreads
+connections, not single requests, over the replicas; k6 keeps one connection
+per VU open.
+
+New in this experiment, `scripts/run-experiment.sh` records the CPU use of the
+whole host (the WSL VM with the Kind nodes and k6) during the measured run from
+`/proc/stat` (`host_cpu=` in the `.meta.txt`: busy and steal share of all CPUs).
+`scripts/resume-env.sh` now sets the replica count given by the overlay instead
+of always 1. CPU and memory per Deployment are the sum over its replicas
+(`scripts/overhead_table.py`); throttling is the share of throttled periods over
+all replicas of a container (`scripts/throttle_table.py`).
+
+Pilot: one run per level of every configuration in `results/exp-03-pilot/`,
+to check the replica switch, the host CPU record and the run time; not used for
+conclusions. Script: `scripts/measure-load.sh` with `PATHS=health`,
+`RATES="100 150 200"` and `EXP=exp-03-replicas`; tables: `scripts/load_table.py`
+and `scripts/throttle_table.py`. Results: `results/exp-03-replicas/`.
+
+An autoscaling part (HorizontalPodAutoscaler on `gateway` and `fastapi`) follows
+as its own design with hypotheses before its runs.
+
+### 12.2 Hypotheses (stated before the runs)
+
+* **H3.1 (capacity).** The limit of the 1000 m gateway at 150 req/s comes from
+  the single gateway process. With 2 replicas, c5 has no collapsed run at 150
+  and 200 req/s.
+* **H3.2 (cost per request).** At 100 req/s, where no configuration is expected
+  to saturate, 2 or 3 replicas change the median latency by less than 0.5 ms
+  against 1 replica, both for c0 and for c5.
+* **H3.3 (resources).** At 100 req/s every added replica adds about one pod's
+  memory per Deployment (about 50 Mi each) and changes the total CPU of the
+  request path by less than 20 %.
+* **H3.4 (third replica).** A third replica adds nothing measurable to the
+  second: at 150 and 200 req/s c5-r3 has no fewer collapsed runs than c5-r2,
+  and its median latency differs by less than 0.5 ms, because all replicas share
+  the host CPUs with k6.
+
+### 12.3 How the result is read
+
+Runs are classified as in §9.6; throttling and host CPU come from
+`scripts/throttle_table.py`.
+
+* H3.1 holds if c5-gateway-cpu1000-r2 has no collapsed run at 150 and 200 req/s.
+* If c5-gateway-cpu1000 (1 replica) has no collapsed run at 150 and 200 req/s
+  either, the capacity part cannot be decided (as in §10.3); only latency,
+  throttling and host CPU are compared.
+* If every c5 version collapses at 200 req/s and the host was at least 90 % busy
+  in those runs, the limit is the host, not the number of replicas; this is
+  reported as such.
+* With 3 runs per level a collapse is rare, so host CPU, throttling and the
+  number of transient runs are part of the result, not only the collapse counts.

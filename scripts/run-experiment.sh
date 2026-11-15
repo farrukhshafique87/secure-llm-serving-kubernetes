@@ -54,6 +54,12 @@ if [ "$MONITOR" = "1" ]; then
   LIVE=(-o experimental-prometheus-rw)
 fi
 
+# CPU counters of the host (the WSL VM that runs the Kind nodes and k6):
+# "<total> <idle> <steal>" in jiffies, summed over all CPUs.
+host_cpu() {
+  awk '/^cpu / { t = 0; for (i = 2; i <= 9; i++) t += $i; print t, $5 + $6, $9 }' /proc/stat
+}
+
 restarts() {
   kubectl -n "$NS" get pods \
     -o jsonpath='{range .items[*]}{.metadata.name}{"="}{.status.containerStatuses[0].restartCount}{"\n"}{end}' | sort
@@ -98,10 +104,12 @@ fi
 BEFORE="$(restarts)"
 echo "== measured run: $RUN_ID ($DURATION, $VUS VUs)"
 START="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+CPU_BEFORE="$(host_cpu)"
 k6 run -e BASE_URL="$BASE_URL" -e VUS="$VUS" -e DURATION="$DURATION" -e RUN_ID="$RUN_ID" \
   --summary-trend-stats="avg,min,med,max,p(90),p(95),p(99)" \
   --summary-export="$OUT/${CONFIG}-r${REP}.json" \
   "${LIVE[@]}" --tag testid="$RUN_ID" "$SCRIPT" || true
+CPU_AFTER="$(host_cpu)"
 END="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 [ -n "$SAMPLER_PID" ] && kill "$SAMPLER_PID" 2>/dev/null || true
 AFTER="$(restarts)"
@@ -112,6 +120,10 @@ AFTER="$(restarts)"
   echo "end=$END"
   echo "script=$SCRIPT vus=$VUS rate=${RATE:--} duration=$DURATION base_url=$BASE_URL"
   echo "monitor=$MONITOR"
+  # Busy and steal share of all host CPUs during the measured run, in percent.
+  echo "$CPU_BEFORE $CPU_AFTER $(nproc)" | awk '{
+    t = $4 - $1; printf "host_cpu=busy %.1f%% steal %.1f%% of %d CPUs\n",
+      100 * (t - ($5 - $2)) / t, 100 * ($6 - $3) / t, $7 }'
   if [ "$BEFORE" = "$AFTER" ]; then echo "valid=true (no pod restarts during run)"; else
     echo "valid=FALSE (pod restarted during run - discard and repeat)"
     echo "restarts_before:"; echo "$BEFORE"; echo "restarts_after:"; echo "$AFTER"

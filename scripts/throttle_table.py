@@ -16,6 +16,10 @@ are not included. Per run it keeps the mean and the maximum of these samples.
 
 Writes throttling.csv into the result folder and prints one table per
 container: mean and maximum per configuration and rate (maximum over runs).
+
+Runs recorded since EXP-03 also carry the CPU use of the whole host during the
+measured run (host_cpu= in the .meta.txt, written by run-experiment.sh). For
+those the script also writes host-cpu.csv and prints a table per level.
 """
 
 import csv
@@ -40,8 +44,15 @@ NAMESPACE = {
     "c5-gateway": "llm-c5-gateway",
     "c5-gateway-cpu1000": "llm-c5-gateway",
     "c6-all": "llm-secure",
+    "c0-baseline-r2": "llm-baseline",
+    "c0-baseline-r3": "llm-baseline",
+    "c5-gateway-cpu1000-r2": "llm-c5-gateway",
+    "c5-gateway-cpu1000-r3": "llm-c5-gateway",
 }
 CONTAINERS = ["gateway", "fastapi", "linkerd-proxy"]
+HOST_CPU = re.compile(
+    r"busy (?P<busy>[\d.]+)% steal (?P<steal>[\d.]+)% of (?P<cpus>\d+)"
+)
 QUERY = (
     "sum by (container) (rate(container_cpu_cfs_throttled_periods_total{{{sel}}}[1m]))"
     " / sum by (container) (rate(container_cpu_cfs_periods_total{{{sel}}}[1m]))"
@@ -86,11 +97,24 @@ def main() -> None:
     directory = Path(args[0])
 
     rows = []
+    host_rows = []
     for path in sorted(directory.glob("*.meta.txt")):
         m = META_FILE.match(path.name)
         if not m or m["config"] not in NAMESPACE:
             continue
         meta = read_meta(path)
+        host = HOST_CPU.search(meta.get("host_cpu", ""))
+        if host:
+            host_rows.append(
+                {
+                    "config": m["config"],
+                    "rate": int(m["rate"]),
+                    "rep": int(m["rep"]),
+                    "busy_pct": float(host["busy"]),
+                    "steal_pct": float(host["steal"]),
+                    "cpus": int(host["cpus"]),
+                }
+            )
         start, end = epoch(meta["start"]) + 60, epoch(meta["end"])
         sel = (
             f'namespace="{NAMESPACE[m["config"]]}", container=~"{"|".join(CONTAINERS)}"'
@@ -137,6 +161,27 @@ def main() -> None:
             print(f"| {key[1]} | {key[2]} | {len(rs)} | {mean:.1f} | {peak:.1f} |")
         print()
     print(f"wrote {directory / 'throttling.csv'}", file=sys.stderr)
+
+    if host_rows:
+        with (directory / "host-cpu.csv").open("w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=list(host_rows[0]))
+            writer.writeheader()
+            writer.writerows(host_rows)
+        levels = defaultdict(list)
+        for r in host_rows:
+            levels[(r["config"], r["rate"])].append(r)
+        print("### Host CPU during the measured run (all CPUs of the WSL host)\n")
+        print("| Config | Rate req/s | Runs | Busy mean % | Busy max % | Steal max % |")
+        print("| --- | --- | --- | --- | --- | --- |")
+        for (config, rate), rs in sorted(levels.items()):
+            busy = [r["busy_pct"] for r in rs]
+            steal = max(r["steal_pct"] for r in rs)
+            print(
+                f"| {config} | {rate} | {len(rs)} | {sum(busy) / len(busy):.1f} "
+                f"| {max(busy):.1f} | {steal:.1f} |"
+            )
+        print()
+        print(f"wrote {directory / 'host-cpu.csv'}", file=sys.stderr)
 
 
 if __name__ == "__main__":

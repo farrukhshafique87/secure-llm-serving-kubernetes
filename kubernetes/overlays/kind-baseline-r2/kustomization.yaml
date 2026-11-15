@@ -1,0 +1,16 @@
+# EXP-03: c0-baseline with 2 replicas of fastapi. Everything else, including
+# the namespace and the entry on localhost:8010, is taken from kind-baseline.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../kind-baseline
+
+patches:
+  - target:
+      kind: Deployment
+      name: fastapi
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
