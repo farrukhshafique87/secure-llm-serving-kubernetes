@@ -40,7 +40,8 @@ helm repo update >/dev/null
 # Pinned to the charts used in the EXP-06 runs (results/exp-06-final/*-environment.txt).
 LINKERD_CRDS_CHART_VERSION="${LINKERD_CRDS_CHART_VERSION:-2026.10.1}"
 LINKERD_CHART_VERSION="${LINKERD_CHART_VERSION:-2026.10.1}"
-CRDS_ARGS=(--version "$LINKERD_CRDS_CHART_VERSION")
+# Linkerd needs the Gateway API CRDs; the chart installs them only when asked.
+CRDS_ARGS=(--version "$LINKERD_CRDS_CHART_VERSION" --set installGatewayAPI=true)
 CP_ARGS=(--version "$LINKERD_CHART_VERSION")
 
 helm upgrade --install linkerd-crds linkerd-edge/linkerd-crds \

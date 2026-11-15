@@ -1,0 +1,6 @@
+run_id=exp-06-k8s-1.36-c5-gateway-health-r1
+start=2026-11-15T07:24:32Z
+end=2026-11-15T07:26:32Z
+script=tests/k6/health-path.js vus=1 rate=50 duration=2m base_url=http://localhost:8010
+monitor=0
+valid=true (no pod restarts during run)
