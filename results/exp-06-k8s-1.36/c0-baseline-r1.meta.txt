@@ -1,0 +1,6 @@
+run_id=exp-06-k8s-1.36-c0-baseline-r1
+start=2026-11-15T05:14:01Z
+end=2026-11-15T05:19:04Z
+script=tests/k6/baseline.js vus=1 rate=- duration=5m base_url=http://localhost:8010
+monitor=0
+valid=true (no pod restarts during run)

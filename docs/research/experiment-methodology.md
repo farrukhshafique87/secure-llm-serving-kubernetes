@@ -429,3 +429,47 @@ not attributed to one cause: the Kubernetes version and the gateway placement
 changed together, so a difference between the two experiments cannot be
 assigned to either alone. The re-run, not EXP-06, is the Kind reference for
 EXP-07.
+
+### 11.5 Results (15 Nov 2026, 3 repetitions, `MONITOR=0`)
+
+42 runs, all valid (no pod restarts, no failed requests). Data:
+`results/exp-06-k8s-1.36/`; table: `overhead-summary.md`
+(`scripts/overhead_table.py`).
+
+Deviations:
+
+* The new cluster had no Gateway API CRDs: the pinned `linkerd-crds` chart
+  2026.10.1 installs them only with `installGatewayAPI=true`, and
+  `linkerd check --proxy` failed on this check when switching to c3 in
+  repetition 1. The CRDs of the chart (bundle v1.1.1) were installed before
+  c3 r1; c0, c1 and c2 of repetition 1 ran without them and do not use the mesh.
+  `scripts/install-linkerd.sh` now sets the option.
+
+`/health` (Δ avg against c0, ms; EXP-06 on v1.31 for comparison):
+
+| Config | Δ ms | Δ % | Verdict | EXP-06 Δ ms |
+| ------ | ---- | --- | ------- | ----------- |
+| c1-rbac | +0.04 | +1.8 | within noise | +0.03 |
+| c2-netpol | -0.01 | -0.5 | within noise | -0.01 |
+| c3-mtls | +0.23 | +11.8 | distinct, higher | +0.36 |
+| c4-tls | +0.73 | +36.7 | distinct, higher | +0.75 |
+| c5-gateway | +2.20 | +110.6 | distinct, higher | +2.42 |
+| c6-all | +4.39 | +220.9 | distinct, higher | +4.99 |
+
+c0 average: 1.99 ms (EXP-06: 1.95 ms).
+
+**H6.1.** Supported. Every configuration gets the same verdict as in EXP-06.
+
+**H6.2.** Supported. mTLS (+0.23 ms) < TLS (+0.73 ms) < gateway (+2.20 ms);
+C6 adds +4.39 ms.
+
+**H6.3.** Supported. On `/chat` all configurations are within noise
+(-2.7 % to +2.0 % against 1992.76 ms for c0).
+
+**H6.4.** Supported. C1 and C2 change CPU by +2 and -0 m and memory by +1 and
+-3 MiB. Of the single controls the gateway adds the most CPU (+122 m, against
++24 m for mTLS and +45 m for TLS).
+
+**Against EXP-06.** The added latency of c3, c5 and c6 is 0.13 to 0.60 ms lower
+than in EXP-06; c1, c2 and c4 differ by 0.02 ms or less. Following §11.4 this is
+reported, not attributed to the Kubernetes version or the gateway placement.

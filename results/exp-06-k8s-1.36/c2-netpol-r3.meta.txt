@@ -1,0 +1,6 @@
+run_id=exp-06-k8s-1.36-c2-netpol-r3
+start=2026-11-15T14:56:19Z
+end=2026-11-15T15:01:20Z
+script=tests/k6/baseline.js vus=1 rate=- duration=5m base_url=http://localhost:8010
+monitor=0
+valid=true (no pod restarts during run)
