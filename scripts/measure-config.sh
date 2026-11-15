@@ -14,6 +14,14 @@ EXP="${EXP:-exp-06-final}"
 cd "$(dirname "$0")/.."
 # shellcheck source=lib/configs.sh
 . scripts/lib/configs.sh
+# shellcheck source=lib/run-lock.sh
+. scripts/lib/run-lock.sh
+
+run_lock
+if run_recorded "$EXP" "$CONFIG" "$REP" && run_recorded "$EXP" "${CONFIG}-health" "$REP"; then
+  echo "== SKIP $CONFIG r$REP: /chat and /health already recorded in results/$EXP"
+  exit 0
+fi
 
 switch_config "$CONFIG"
 

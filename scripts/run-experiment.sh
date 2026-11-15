@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # One measured k6 run following docs/research/experiment-methodology.md:
 # env record -> smoke -> warm-up -> measured run -> restart check -> cool-down.
+# Waits while another measurement runs; a run already recorded is skipped.
 #
 # Usage: run-experiment.sh <exp-dir> <config> <rep> <namespace> [k6-script]
 # Example:
@@ -30,6 +31,14 @@ cd "$(dirname "$0")/.."
 OUT="results/${EXP}"
 RUN_ID="${EXP}-${CONFIG}-r${REP}"
 mkdir -p "$OUT"
+
+# shellcheck source=lib/run-lock.sh
+. scripts/lib/run-lock.sh
+run_lock
+if run_recorded "$EXP" "$CONFIG" "$REP"; then
+  echo "== SKIP $RUN_ID: already recorded in $OUT (delete its files to repeat it)"
+  exit 0
+fi
 
 # Live output to Prometheus. The summary JSON stays the source of all results;
 # the live data is for watching runs and for the CPU throttling view.
