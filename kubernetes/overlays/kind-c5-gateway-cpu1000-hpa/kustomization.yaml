@@ -1,0 +1,13 @@
+# EXP-03 HPA part: c5-gateway-cpu1000 with a HorizontalPodAutoscaler on
+# gateway and on fastapi (1 to 3 replicas). Everything else is taken from
+# kind-c5-gateway-cpu1000.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# The namespace of the parent overlay does not reach the HPA files, so set it here.
+namespace: llm-c5-gateway
+
+resources:
+  - ../kind-c5-gateway-cpu1000
+  - hpa-gateway.yaml
+  - hpa-fastapi.yaml

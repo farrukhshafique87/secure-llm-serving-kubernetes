@@ -1,7 +1,7 @@
 .PHONY: help format lint validate validate-kube validate-yaml test clean \
         kind-up kind-down metrics-server monitoring \
         build load build-gateway load-gateway secrets ingress linkerd \
-        deploy pull-model pause resume verify measure measure-load
+        deploy pull-model pause resume verify measure measure-load measure-hpa
 
 SHELL := /bin/bash
 
@@ -19,7 +19,7 @@ help:
 	@echo "Images:        build load build-gateway load-gateway"
 	@echo "Secure setup:  secrets ingress linkerd (once)"
 	@echo "Environment:   deploy pull-model pause resume verify  [CONFIG=c0-baseline]"
-	@echo "Measurement:   measure measure-load  CONFIG=<config> REP=<n>"
+	@echo "Measurement:   measure measure-load measure-hpa  CONFIG=<config> REP=<n>"
 	@echo "Configs: c0-baseline c1-rbac c2-netpol c3-mtls c4-tls c5-gateway c6-all"
 	@echo "Only one environment may run at a time: make pause CONFIG=<other> first."
 
@@ -100,6 +100,10 @@ measure:
 # make measure-load CONFIG=c6-all REP=1 [PATHS=health]
 measure-load:
 	./scripts/measure-load.sh $(CONFIG) $(REP)
+
+# make measure-hpa CONFIG=c5-gateway-cpu1000-hpa REP=1
+measure-hpa:
+	./scripts/measure-hpa.sh $(CONFIG) $(REP)
 
 clean:
 	find . -type d -name "__pycache__" -prune -exec rm -rf {} +

@@ -36,6 +36,7 @@ PATH_PODS = {
     "c0-baseline-r3": ["fastapi"],
     "c5-gateway-cpu1000-r2": ["fastapi", "gateway"],
     "c5-gateway-cpu1000-r3": ["fastapi", "gateway"],
+    "c5-gateway-cpu1000-hpa": ["fastapi", "gateway"],
     "c6-all": [
         "fastapi",
         "gateway",

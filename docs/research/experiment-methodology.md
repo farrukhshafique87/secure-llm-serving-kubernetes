@@ -694,3 +694,74 @@ table script for this part is written with the results.
 * If the HPA does not scale out at all, H3.5 does not hold and H3.6 and H3.7
   cannot be tested; this is reported with the HPA events of the run
   (`*.hpa.txt`).
+
+### 12.8 Autoscaling part: results (2026-11-16)
+
+9 runs, all valid (no pod restarts), in one session; the host was at most
+21.4 % busy, with no steal time. Data: `results/exp-03-hpa/`; tables:
+`hpa-summary.md` (`scripts/hpa_table.py`, written after the runs as stated in
+§12.5) and `throttling-summary.md` (`scripts/throttle_table.py`, which now also
+reads the load-step runs; throttling is over all replicas of a container).
+Pilot: `results/exp-03-hpa-pilot/` (not used for conclusions). Each run started
+after a short wait for the lock: the replica sampler of the previous run still
+held it for up to 5 s. This did not overlap any measurement; the sampler now
+closes the lock descriptor.
+
+Median latency per phase (ms, median of the three run medians):
+
+| Config | pre | surge | high | post | Runs: stable / transient / collapse |
+| ------ | ---- | ----- | ------- | ---- | ----------------------------------- |
+| c5 (1 replica)  | 4.50 | 4.98 | 5.11    | 4.55 | 0 / 2 / 1 |
+| c5-r3 (3)       | 4.42 | 4.63 | 4.68    | 4.44 | 3 / 0 / 0 |
+| c5-hpa (1 to 3) | 4.49 | 7.12 | 3452.50 | 4.64 | 0 / 0 / 3 |
+
+All three HPA runs collapsed: 47 to 53 % of the requests were dropped, and the
+high-phase median was 2931 to 3454 ms. With one fixed replica, one run
+collapsed (repetition 1, 11 % dropped; high-phase median 5.19 ms) and two were
+transient (20 and 40 dropped). With three fixed replicas no request was
+dropped and no request took longer than 274 ms. The highest 1-minute gateway
+throttling was 48.0 % with one fixed replica, 34.4 % with the HPA and 0.0 % with
+three replicas.
+
+| HPA run | gateway at 3 ready | `fastapi` at 2 ready | `fastapi` back to 1 | all back to 1 | gateway CPU, high phase: pod at start / added pods |
+| ------- | ------------------ | -------------------- | ------------------- | ------------- | -------------------------------------------------- |
+| r1      | 231 s | 238 s | 307 s | 595 s | 995 / 4 m |
+| r2      | 234 s | 245 s | 315 s | 581 s | 992 / 4 m |
+| r3      | 222 s | 228 s | 285 s | 569 s | 996 / 4 m |
+
+Times in seconds after the start of the run; the step to 200 req/s begins at
+180 s, the drop to 20 req/s ends at 500 s. With one and three fixed replicas
+the gateway used 726 to 746 m and 704 to 714 m (sum) in the high phase.
+
+**H3.5.** Supported. The HPA asked for 3 gateway pods 30 to 42 s after the step;
+all three were ready 42 to 54 s after it. `fastapi` reached 2 and not 3.
+
+**H3.6.** Not supported. The HPA did not leave latency unchanged: all three HPA
+runs collapsed in the high phase, while three fixed replicas stayed stable.
+One fixed replica collapsed in one of three runs.
+
+**H3.7.** Supported, more strongly than stated. In the high phase the two
+gateway pods added by the HPA used 4 m together, the pod that existed at the
+start 992 to 996 m, that is, its CPU limit of 1000 m.
+
+**H3.8.** Supported. Both Deployments were back at 1 replica 69 to 95 s after
+the drop (by 569 to 595 s).
+
+**Post-hoc: what happened.** The added gateway pods were ready but received
+almost no requests, so the whole load stayed on one pod. That pod reached its
+CPU limit, was throttled, and the queue did not drain until the load dropped.
+Because fewer requests got through, `fastapi` used less CPU and the HPA scaled
+it back to 1 replica while the load was still high (285 to 315 s). With one
+fixed replica the same pod ran at about 730 m and kept up in two of three runs;
+in the HPA runs it ran at its limit in every run. The recorded data does not
+show why the pod at start used more CPU in the HPA runs, or why no new
+connection reached the added pods; both are open.
+
+**Together with §12.4.** Replicas that exist before the load arrives share it
+and remove the limit (c5-r3: no dropped request). Replicas that an HPA adds
+during the load step did not take load from the client's existing connections
+and did not prevent collapse; in this setup scaling out reacted in under a
+minute but did not help. For the thesis this means: on the request path
+behind the API gateway, capacity has to be in place before a load step;
+CPU-based autoscaling alone did not provide it for a client that keeps its
+connections open.
