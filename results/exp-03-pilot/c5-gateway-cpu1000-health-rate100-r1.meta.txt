@@ -1,0 +1,7 @@
+run_id=exp-03-pilot-c5-gateway-cpu1000-health-rate100-r1
+start=2026-11-15T23:42:14Z
+end=2026-11-15T23:44:15Z
+script=tests/k6/health-path.js vus=1 rate=100 duration=2m base_url=http://localhost:8010
+monitor=1
+host_cpu=busy 21.7% steal 0.0% of 8 CPUs
+valid=true (no pod restarts during run)

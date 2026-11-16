@@ -1,0 +1,7 @@
+run_id=exp-03-pilot-c0-baseline-health-rate100-r1
+start=2026-11-15T23:08:20Z
+end=2026-11-15T23:10:21Z
+script=tests/k6/health-path.js vus=1 rate=100 duration=2m base_url=http://localhost:8010
+monitor=1
+host_cpu=busy 14.2% steal 0.0% of 8 CPUs
+valid=true (no pod restarts during run)

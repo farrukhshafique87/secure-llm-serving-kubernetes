@@ -91,6 +91,7 @@ def summarise(runs: list[dict], target: float | None) -> dict:
         "dropped": sum(dropped),
         "tps": mean(metric(runs, "llm_tokens_per_second", "avg")),
         "pod_cpu": {p: usage.get(p, (None, None))[0] for p in DETAIL_PODS},
+        "pod_mem": {p: usage.get(p, (None, None))[1] for p in DETAIL_PODS},
     }
     if target is not None:
         saturated = (
@@ -277,8 +278,10 @@ def main() -> None:
 
         print("### CPU per pod on the /health path (millicores, mean of run means)\n")
         print(
-            "CPU limits in the manifests: fastapi 1000 m, gateway 500 m, "
-            "traefik none. A pod at its limit is throttled by the kernel.\n"
+            "CPU limits in the manifests: fastapi 1000 m, gateway 500 m "
+            "(1000 m in the c5-gateway-cpu1000 configurations), traefik none. "
+            "A pod at its limit is throttled by the kernel.\n"
+            "With more than one replica the value is the sum over all replicas.\n"
             "Pods that are not on the request path of a configuration show '-'.\n"
         )
         rows = []
@@ -292,6 +295,20 @@ def main() -> None:
                     ]
                     rows.append([c, str(r)] + cpu)
         table(["Config", "Rate req/s"] + [f"{p} m" for p in DETAIL_PODS], rows)
+
+        print("### Memory per pod on the /health path (Mi, mean of run means)\n")
+        print("With more than one replica the value is the sum over all replicas.\n")
+        rows = []
+        for c in configs:
+            for r in rates:
+                s = summary.get((c, "health", r))
+                if s:
+                    mem = [
+                        fmt(s["pod_mem"][p], 0) if p in PATH_PODS[c] else "-"
+                        for p in DETAIL_PODS
+                    ]
+                    rows.append([c, str(r)] + mem)
+        table(["Config", "Rate req/s"] + [f"{p} Mi" for p in DETAIL_PODS], rows)
 
     if vus:
         print("### /chat per number of virtual users\n")
@@ -356,6 +373,7 @@ def main() -> None:
                     "runs_collapse",
                     "median_ms_no_collapse",
                 ]
+                + [f"mem_{p}_mi" for p in DETAIL_PODS]
             )
             for (c, p, lvl), s in sorted(summary.items()):
                 w.writerow(
@@ -385,6 +403,7 @@ def main() -> None:
                         if p == "health"
                         else ["", "", "", ""]
                     )
+                    + [s["pod_mem"][q] for q in DETAIL_PODS]
                 )
 
 
