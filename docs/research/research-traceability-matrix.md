@@ -429,7 +429,7 @@ Changes to hardware, model version, workload, resource allocation, or deployment
 | EXP-00 Deployment & Monitoring | Completed / baseline | Final verification            |
 | EXP-01 Baseline Load           | Completed            | -                             |
 | EXP-02 Load & Stress           | Completed (Kind)     | Results in methodology §9.6   |
-| EXP-03 Horizontal Scaling      | Replicas done (Kind) | Results in methodology §12.4; HPA part next |
+| EXP-03 Horizontal Scaling      | Replicas done (Kind) | HPA part designed, methodology §12.5 |
 | EXP-04 Resource Allocation     | Completed (Kind)     | Results in methodology §10.4  |
 | EXP-05 Security Verification   | Completed            | -                             |
 | EXP-06 Secure Performance      | Kind done            | Repeat on cloud (EXP-07)      |

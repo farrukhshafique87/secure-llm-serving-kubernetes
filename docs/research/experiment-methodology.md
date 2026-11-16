@@ -96,12 +96,15 @@ overhead. Kind and cloud results are reported separately (RQ2).
 | c5-gateway-cpu1000 | kind-c5-gateway-cpu1000 | llm-c5-gateway | http://localhost:8010 | yes |
 | c0-baseline-r2, -r3 | kind-baseline-r2, -r3 | llm-baseline | http://localhost:8010 | no |
 | c5-gateway-cpu1000-r2, -r3 | kind-c5-gateway-cpu1000-r2, -r3 | llm-c5-gateway | http://localhost:8010 | yes |
+| c5-gateway-cpu1000-hpa | kind-c5-gateway-cpu1000-hpa | llm-c5-gateway | http://localhost:8010 | yes |
 
 c5-gateway-cpu1000 exists only for EXP-04 (§10): it is c5-gateway with the gateway
 CPU limit at 1000 m instead of 500 m and shares its namespace. The `-r2` and `-r3`
 configurations exist only for EXP-03 (§12): the same overlays with 2 or 3
 replicas of `fastapi` (c0) and of `gateway` and `fastapi` (c5); they share the
-namespace of their 1-replica version.
+namespace of their 1-replica version. c5-gateway-cpu1000-hpa (§12.5) adds a
+HorizontalPodAutoscaler to `gateway` and `fastapi`; switching to another
+configuration of the namespace removes it again (`scripts/resume-env.sh`).
 
 C3 uses Linkerd. Only hops between meshed workloads use mTLS; Traefik is not
 meshed, so the hop from the ingress to the gateway is plain HTTP.
@@ -625,3 +628,69 @@ per replica (H3.3). In this session neither the replica count nor the host CPU
 was the limit, so the experiment does not explain the single collapse at 150
 req/s in EXP-04. The per-request overhead of the gateway (2.3 to 2.8 ms over c0
 in the medians) does not depend on the number of replicas.
+
+### 12.5 Autoscaling part: design (stated before the runs)
+
+§12.4 compared fixed replica counts at constant rates. The autoscaling part
+asks what a HorizontalPodAutoscaler (HPA) does when the load changes during a
+run: how fast it adds replicas, whether that changes latency, and whether the
+added replicas receive traffic.
+
+| Item          | Value                                                              |
+| ------------- | ------------------------------------------------------------------ |
+| Configs       | c5-gateway-cpu1000 (1 replica), -r3 (3 replicas), -hpa (1 to 3)    |
+| HPA           | `gateway` and `fastapi`, min 1, max 3, target 200 m average CPU per pod, scale-down window 60 s |
+| Load          | `/health`, `tests/k6/health-step.js`: 20 req/s for 3 min, 10 s ramp, 200 req/s for 5 min, 10 s ramp, 20 req/s for 4 min (12 min 20 s) |
+| Warm-up       | 30 s at 20 req/s (`tests/k6/health-path.js`), discarded            |
+| Repetitions   | 3, interleaved: r1 1, r3, hpa; r2 r3, hpa, 1; r3 hpa, 1, r3        |
+| Start state   | every run starts at the replica count of its overlay (the script waits up to 5 min) |
+| Monitoring    | `MONITOR=1` for every run                                          |
+
+The target is an absolute CPU value because the CPU requests differ (gateway
+100 m, `fastapi` 500 m); the CPU limits are unchanged. The scale-down window is
+shortened from the default 300 s so that scale-in happens inside the run.
+Kind defaults are kept for the rest: metrics-server at 15 s resolution, HPA
+sync every 15 s. Basis for the expected replica counts (§12.4, 1 replica at
+200 req/s): `gateway` used 618 m and `fastapi` 303 m, so the HPA should ask for
+4 (capped at 3) gateway pods and 2 `fastapi` pods; at 20 req/s both stay
+below 200 m.
+
+The k6 script tags every request with its phase: `pre` (0-180 s), `surge`
+(180-250 s: ramp and the first 60 s at 200 req/s), `high` (250-490 s) and
+`post` (490-740 s), and writes latency per phase into the summary JSON.
+`scripts/measure-hpa.sh` records the ready and desired replicas of `gateway`
+and `fastapi` every 5 s (`*.replicas.txt`); CPU per pod (`*.resources.txt`),
+throttling and host CPU are recorded as in §12.1. Times are counted from
+`start=` in the `.meta.txt`.
+
+Command: `EXP=exp-03-hpa make measure-hpa CONFIG=<config> REP=<n>`. Pilot: one
+run of c5-gateway-cpu1000-hpa and one of c5-gateway-cpu1000 in
+`results/exp-03-hpa-pilot/`, to check the phase tags, the replica record and
+the run time; not used for conclusions. Results: `results/exp-03-hpa/`. The
+table script for this part is written with the results.
+
+### 12.6 Autoscaling part: hypotheses (stated before the runs)
+
+* **H3.5 (scale-out).** In every HPA run, `gateway` has at least 2 ready
+  replicas within 90 s after the step (by 270 s) and 3 before the end of the
+  high phase (490 s); `fastapi` reaches 2 and not 3.
+* **H3.6 (latency).** Because one replica kept up with 200 req/s (§12.4), the
+  HPA does not change latency: in the surge and high phases the median of
+  c5-gateway-cpu1000-hpa is within 0.5 ms of both fixed configurations, and no
+  run of any configuration collapses (§9.6).
+* **H3.7 (traffic on new replicas).** k6 keeps the connections it opened in the
+  low phase, and kube-proxy spreads connections, not requests. In the high
+  phase, the gateway pods added by the HPA together use less CPU than the pod
+  that existed at the start of the run.
+* **H3.8 (scale-in).** After the drop to 20 req/s (500 s), both Deployments are
+  back at 1 replica within 180 s (by 680 s), inside the run.
+
+### 12.7 Autoscaling part: how the result is read
+
+* Scale-out and scale-in times come from `*.replicas.txt` (5 s resolution, so
+  ±5 s). A time counts for H3.5 and H3.8 only if all three HPA runs meet it.
+* H3.7 uses the mean CPU per pod in the high phase from `*.resources.txt`; the
+  first pod is the one present in the first sample of the run.
+* If the HPA does not scale out at all, H3.5 does not hold and H3.6 and H3.7
+  cannot be tested; this is reported with the HPA events of the run
+  (`*.hpa.txt`).
