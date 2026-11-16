@@ -1,0 +1,7 @@
+run_id=exp-03-replicas-c0-baseline-r2-health-rate200-r3
+start=2026-11-16T03:26:29Z
+end=2026-11-16T03:28:30Z
+script=tests/k6/health-path.js vus=1 rate=200 duration=2m base_url=http://localhost:8010
+monitor=1
+host_cpu=busy 18.9% steal 0.0% of 8 CPUs
+valid=true (no pod restarts during run)

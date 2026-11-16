@@ -1,0 +1,7 @@
+run_id=exp-03-replicas-c5-gateway-cpu1000-r2-health-rate200-r1
+start=2026-11-16T01:24:05Z
+end=2026-11-16T01:26:05Z
+script=tests/k6/health-path.js vus=1 rate=200 duration=2m base_url=http://localhost:8010
+monitor=1
+host_cpu=busy 29.7% steal 0.0% of 8 CPUs
+valid=true (no pod restarts during run)

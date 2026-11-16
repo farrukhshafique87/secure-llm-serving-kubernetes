@@ -562,3 +562,66 @@ Runs are classified as in §9.6; throttling and host CPU come from
   reported as such.
 * With 3 runs per level a collapse is rare, so host CPU, throttling and the
   number of transient runs are part of the result, not only the collapse counts.
+
+### 12.4 Results (2026-11-16)
+
+54 runs, all valid (no pod restarts), 3 h 19 min in one session. Data:
+`results/exp-03-replicas/`; tables: `load-summary.md` (`scripts/load_table.py`)
+and `throttling-summary.md` with the host CPU (`scripts/throttle_table.py`).
+Pilot: `results/exp-03-pilot/` (1 run per level, not used for conclusions).
+
+Median latency of the runs without collapse (ms, n = 3):
+
+| Rate req/s | c0 | c0-r2 | c0-r3 | c5 | c5-r2 | c5-r3 |
+| ---------- | ---- | ----- | ----- | ---- | ----- | ----- |
+| 100        | 1.79 | 2.04  | 1.82  | 4.11 | 4.19  | 4.18  |
+| 150        | 1.71 | 1.81  | 1.81  | 4.12 | 4.28  | 4.26  |
+| 200        | 1.64 | 1.76  | 1.77  | 4.36 | 4.38  | 4.48  |
+
+c5 = c5-gateway-cpu1000. No run collapsed. Two runs were transient: c5 at
+200 req/s (repetition 1, 46 requests dropped, average 38.11 ms, slowest request
+3.27 s) and c5-r2 at 100 req/s (repetition 2, 31 dropped, average 11.21 ms,
+slowest 1.45 s). The gateway was throttled for at most 0.7 % of a 1-minute
+window (c5, 200 req/s), `fastapi` for at most 0.2 %. The host was at most
+31.1 % busy in any run (c5-r3, 200 req/s), with no steal time.
+
+**H3.1.** Cannot be decided (§12.3). c5-r2 had no collapsed run at 150 and
+200 req/s, but c5 with one replica had none either; its only sign of a limit is
+the transient run at 200 req/s. The collapse at 150 req/s in EXP-04 did not
+recur.
+
+**H3.2.** Supported. At 100 req/s, 2 and 3 replicas change the median by
++0.25 and +0.03 ms for c0 and by +0.08 and +0.07 ms for c5.
+
+**H3.3.** Supported. At 100 req/s every added replica adds 42 to 52 Mi per
+Deployment (`fastapi` in c0: 53, 100, 142 Mi; in c5: 46, 98, 148 Mi; `gateway`:
+48, 93, 139 Mi). The total CPU of the request path changes by 0 and -8 % for c0
+(202, 202, 186 m) and by +6 and +5 % for c5 (438, 464, 461 m).
+
+**H3.4.** The prediction holds, the stated reason does not. At 150 and
+200 req/s neither c5-r2 nor c5-r3 had a collapsed run, and their medians differ
+by 0.02 and 0.10 ms. The host was at most 31.1 % busy, so the shared host CPU
+did not limit the third replica; no limit was reached at all.
+
+**Post-hoc: spread over the replicas.** k6 opens one connection per VU, which
+kube-proxy spreads over the `gateway` replicas; in each run the busiest gateway
+pod used at most 1.5 times the CPU of the least busy one. The gateway keeps its
+own few connections to `fastapi` open, so behind the gateway the spread is
+uneven: with 3 replicas, one `fastapi` pod used 4 m (idle) in all three runs at
+100 req/s and 9 and 15 m in two of three runs at 200 req/s; with 2 replicas, one
+`fastapi` pod used 20 m in one run at 200 req/s. Without the gateway (c0), k6
+reaches `fastapi` directly and no replica was idle (lowest 39 m at 100 req/s).
+Values: `*.resources.txt`.
+
+**Post-hoc: CPU at 200 req/s.** Outside the tested level of H3.3, c0-r2 used
+21 % more `fastapi` CPU than c0 at 200 req/s (396 against 327 m); c5-r2 and
+c5-r3 used 7 and 13 % more on the request path (986 and 1041 against 921 m).
+
+**Together with EXP-04.** Up to 200 req/s, one replica of each service with a
+1000 m gateway kept up in 8 of 9 runs and never collapsed; with 2 and 3 replicas
+no run at 150 or 200 req/s dropped a request (one c5-r2 run at 100 req/s did).
+More replicas did not change the cost per request (H3.2) and added about 50 Mi
+per replica (H3.3). In this session neither the replica count nor the host CPU
+was the limit, so the experiment does not explain the single collapse at 150
+req/s in EXP-04. The per-request overhead of the gateway (2.3 to 2.8 ms over c0
+in the medians) does not depend on the number of replicas.

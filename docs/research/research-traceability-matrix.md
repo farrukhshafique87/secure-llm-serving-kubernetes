@@ -69,7 +69,7 @@ Workload intensity (EXP-02), replica count (EXP-03) and resource limits (EXP-04)
 | RQ1 | EXP-00 | Prerequisite    | Deployment health     | A           | Completed |
 | RQ1 | EXP-01 | Reference       | 1 VU, unsecured       | L T E C M S | Completed |
 | RQ1 | EXP-02 | Operating point | VUs / request rate    | L T E C M   | Completed |
-| RQ1 | EXP-03 | Sensitivity     | Replica count         | L T E C M   | Planned   |
+| RQ1 | EXP-03 | Sensitivity     | Replica count         | L T E C M   | Kind done |
 | RQ1 | EXP-04 | Sensitivity     | CPU / memory limits   | L T E C M   | Completed |
 | RQ1 | EXP-05 | Verification    | Controls work         | A B         | Completed |
 | RQ1 | EXP-06 | Primary         | Baseline vs secure    | L T E C M S | Kind done |
@@ -429,7 +429,7 @@ Changes to hardware, model version, workload, resource allocation, or deployment
 | EXP-00 Deployment & Monitoring | Completed / baseline | Final verification            |
 | EXP-01 Baseline Load           | Completed            | -                             |
 | EXP-02 Load & Stress           | Completed (Kind)     | Results in methodology §9.6   |
-| EXP-03 Horizontal Scaling      | Designed             | Run, see methodology §12      |
+| EXP-03 Horizontal Scaling      | Replicas done (Kind) | Results in methodology §12.4; HPA part next |
 | EXP-04 Resource Allocation     | Completed (Kind)     | Results in methodology §10.4  |
 | EXP-05 Security Verification   | Completed            | -                             |
 | EXP-06 Secure Performance      | Kind done            | Repeat on cloud (EXP-07)      |
