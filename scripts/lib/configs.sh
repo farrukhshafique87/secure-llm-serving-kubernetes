@@ -21,6 +21,8 @@ config_vars() {
     c0-baseline-r3) OVERLAY=kind-baseline-r3; NS=llm-baseline; URL=http://localhost:8010; AUTH=no ;;
     c5-gateway-cpu1000-r2) OVERLAY=kind-c5-gateway-cpu1000-r2; NS=llm-c5-gateway; URL=http://localhost:8010; AUTH=yes ;;
     c5-gateway-cpu1000-r3) OVERLAY=kind-c5-gateway-cpu1000-r3; NS=llm-c5-gateway; URL=http://localhost:8010; AUTH=yes ;;
+    # EXP-03 HPA part: gateway and fastapi scaled by an HPA, 1 to 3 replicas.
+    c5-gateway-cpu1000-hpa) OVERLAY=kind-c5-gateway-cpu1000-hpa; NS=llm-c5-gateway; URL=http://localhost:8010; AUTH=yes ;;
     *) echo "unknown config: $1" >&2; return 1 ;;
   esac
 }

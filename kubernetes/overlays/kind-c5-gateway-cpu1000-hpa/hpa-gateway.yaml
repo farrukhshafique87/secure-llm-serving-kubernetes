@@ -1,0 +1,25 @@
+# Scale on the average CPU per pod as reported by metrics-server (15 s
+# resolution). The target is an absolute value, because the CPU requests of
+# gateway (100 m) and fastapi (500 m) differ. Scale-down waits 60 s instead of
+# the default 300 s, so that scale-in happens inside one measured run.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: gateway
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: gateway
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: AverageValue
+          averageValue: 200m
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 60

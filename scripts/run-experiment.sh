@@ -9,6 +9,7 @@
 #
 # Env overrides: BASE_URL (default http://localhost:8010), VUS (1),
 #   DURATION (5m), WARMUP (1m), COOLDOWN (120), SCRIPT_ARGS,
+#   WARMUP_SCRIPT (the k6 script; another one for scripts with a fixed profile),
 #   MONITOR (0): 1 also pushes k6 metrics live to Prometheus for Grafana.
 #   Needs ./scripts/monitoring-forward.sh running. Use the same MONITOR value
 #   for every run of one experiment, because the push costs some client CPU.
@@ -19,6 +20,7 @@ CONFIG="${2:?config name, e.g. c0-baseline}"
 REP="${3:?repetition number}"
 NS="${4:?namespace}"
 SCRIPT="${5:-tests/k6/baseline.js}"
+WARMUP_SCRIPT="${WARMUP_SCRIPT:-$SCRIPT}"
 
 BASE_URL="${BASE_URL:-http://localhost:8010}"
 VUS="${VUS:-1}"
@@ -77,7 +79,7 @@ k6 run --quiet -e BASE_URL="$BASE_URL" tests/k6/smoke.js
 
 echo "== warm-up ($WARMUP, discarded)"
 k6 run --quiet -e BASE_URL="$BASE_URL" -e VUS="$VUS" -e DURATION="$WARMUP" \
-  "${LIVE[@]}" --tag testid="${RUN_ID}-warmup" "$SCRIPT" >/dev/null || true
+  "${LIVE[@]}" --tag testid="${RUN_ID}-warmup" "$WARMUP_SCRIPT" >/dev/null || true
 
 # Resource sampling (CPU/memory per pod) every 15 s if Metrics Server is installed
 SAMPLER_PID=""

@@ -35,6 +35,11 @@ DEPLOYMENTS="$(kubectl kustomize "$OVERLAY" | awk '
   END { flush() }')"
 
 kubectl apply -k "$OVERLAY"
+# Configurations that share a namespace differ in their autoscalers (EXP-03):
+# apply does not delete an HPA that the overlay no longer contains.
+if ! kubectl kustomize "$OVERLAY" | grep -q '^kind: HorizontalPodAutoscaler'; then
+  kubectl -n "$NS" delete hpa --all --ignore-not-found
+fi
 while read -r name replicas; do
   kubectl -n "$NS" scale deploy "$name" --replicas="$replicas"
 done <<<"$DEPLOYMENTS"
