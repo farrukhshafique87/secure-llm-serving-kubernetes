@@ -12,6 +12,8 @@ The overhead tables come from [`exp-06-final/overhead-summary.md`](exp-06-final/
 | `exp-02-pilot` | EXP-02 pilot: `/health` on c0, c5 and c6 at 50 to 200 req/s, 1 run each, to choose the sweep levels | Pilot, not used for conclusions |
 | `exp-03-replicas` | EXP-03: `/health` on c0 and c5-gateway-cpu1000 with 1, 2 and 3 replicas at 100, 150, 200 req/s, 3 repetitions, `MONITOR=1`, with throttling and host CPU per run | Final |
 | `exp-03-pilot` | EXP-03 pilot: the same 6 configurations, 1 run per level, to check the replica switch and the host CPU record | Pilot, not used for conclusions |
+| `exp-03-hpa` | EXP-03 autoscaling part: `/health` load step (20, 200, 20 req/s) on c5-gateway-cpu1000 with 1 and 3 fixed replicas and with an HPA (1 to 3), 3 repetitions, `MONITOR=1`; replicas every 5 s (`*.replicas.txt`), HPA events (`*.hpa.txt`), `hpa-summary.md` | Final |
+| `exp-03-hpa-pilot` | Pilot of the autoscaling part: HPA and 1 fixed replica, 1 run each | Pilot, not used for conclusions |
 | `exp-04-gateway-cpu` | EXP-04: `/health` on c0, c5 (gateway 500 m) and c5-gateway-cpu1000 at 50-100 req/s (c0 and 1000 m also 120, 150), 3 repetitions, `MONITOR=1`, with CPU throttling per run | Final |
 | `exp-04-pilot` | EXP-04 pilot: c5 at 500 m and 1000 m, 70 and 100 req/s, 1 run each, to check the setup | Pilot, not used for conclusions |
 | `exp-05-security-verification` | EXP-05: evidence that each control works (RBAC, NetworkPolicy, mTLS, all controls); `k8s-1.36/`: re-run on Kubernetes v1.36.4 with live TLS and gateway checks, all 7 configurations | Final |

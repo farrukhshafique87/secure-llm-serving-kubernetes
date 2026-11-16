@@ -1,0 +1,10 @@
+config,rate,rep,busy_pct,steal_pct,cpus
+c5-gateway-cpu1000-hpa,0,1,20.8,0.0,8
+c5-gateway-cpu1000-hpa,0,2,21.3,0.0,8
+c5-gateway-cpu1000-hpa,0,3,21.3,0.0,8
+c5-gateway-cpu1000-r3,0,1,21.4,0.0,8
+c5-gateway-cpu1000-r3,0,2,21.4,0.0,8
+c5-gateway-cpu1000-r3,0,3,21.0,0.0,8
+c5-gateway-cpu1000,0,1,20.9,0.0,8
+c5-gateway-cpu1000,0,2,20.7,0.0,8
+c5-gateway-cpu1000,0,3,20.7,0.0,8

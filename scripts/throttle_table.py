@@ -32,8 +32,11 @@ from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
+# /health runs at one rate, and the load-step runs of EXP-03 (rate shown as
+# "step", stored as 0).
 META_FILE = re.compile(
-    r"^(?P<config>c\d-[a-z0-9-]+?)-health-rate(?P<rate>\d+)-r(?P<rep>\d+)\.meta\.txt$"
+    r"^(?P<config>c\d-[a-z0-9-]+?)-(?:health-rate(?P<rate>\d+)|step)"
+    r"-r(?P<rep>\d+)\.meta\.txt$"
 )
 NAMESPACE = {
     "c0-baseline": "llm-baseline",
@@ -48,6 +51,7 @@ NAMESPACE = {
     "c0-baseline-r3": "llm-baseline",
     "c5-gateway-cpu1000-r2": "llm-c5-gateway",
     "c5-gateway-cpu1000-r3": "llm-c5-gateway",
+    "c5-gateway-cpu1000-hpa": "llm-c5-gateway",
 }
 CONTAINERS = ["gateway", "fastapi", "linkerd-proxy"]
 HOST_CPU = re.compile(
@@ -108,7 +112,7 @@ def main() -> None:
             host_rows.append(
                 {
                     "config": m["config"],
-                    "rate": int(m["rate"]),
+                    "rate": int(m["rate"] or 0),
                     "rep": int(m["rep"]),
                     "busy_pct": float(host["busy"]),
                     "steal_pct": float(host["steal"]),
@@ -126,7 +130,7 @@ def main() -> None:
             rows.append(
                 {
                     "config": m["config"],
-                    "rate": int(m["rate"]),
+                    "rate": int(m["rate"] or 0),
                     "rep": int(m["rep"]),
                     "container": container,
                     "samples": len(values),
@@ -158,7 +162,8 @@ def main() -> None:
             rs = groups[key]
             mean = sum(r["mean"] for r in rs) / len(rs) * 100
             peak = max(r["max"] for r in rs) * 100
-            print(f"| {key[1]} | {key[2]} | {len(rs)} | {mean:.1f} | {peak:.1f} |")
+            rate = key[2] or "step"
+            print(f"| {key[1]} | {rate} | {len(rs)} | {mean:.1f} | {peak:.1f} |")
         print()
     print(f"wrote {directory / 'throttling.csv'}", file=sys.stderr)
 
@@ -177,7 +182,8 @@ def main() -> None:
             busy = [r["busy_pct"] for r in rs]
             steal = max(r["steal_pct"] for r in rs)
             print(
-                f"| {config} | {rate} | {len(rs)} | {sum(busy) / len(busy):.1f} "
+                f"| {config} | {rate or 'step'} | {len(rs)} "
+                f"| {sum(busy) / len(busy):.1f} "
                 f"| {max(busy):.1f} | {steal:.1f} |"
             )
         print()

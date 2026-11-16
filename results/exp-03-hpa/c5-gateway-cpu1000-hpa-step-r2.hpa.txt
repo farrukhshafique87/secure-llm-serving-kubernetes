@@ -1,0 +1,12 @@
+NAME      REFERENCE            TARGETS        MINPODS   MAXPODS   REPLICAS   AGE
+fastapi   Deployment/fastapi   cpu: 3m/200m   1         3         1          14m
+gateway   Deployment/gateway   cpu: 2m/200m   1         3         1          14m
+LAST SEEN   TYPE     REASON              OBJECT                            MESSAGE
+41m         Normal   SuccessfulRescale   horizontalpodautoscaler/fastapi   New size: 2; reason: cpu resource above target
+41m         Normal   SuccessfulRescale   horizontalpodautoscaler/gateway   New size: 3; reason: cpu resource above target
+39m         Normal   SuccessfulRescale   horizontalpodautoscaler/fastapi   New size: 1; reason: All metrics below target
+34m         Normal   SuccessfulRescale   horizontalpodautoscaler/gateway   New size: 1; reason: All metrics below target
+10m         Normal   SuccessfulRescale   horizontalpodautoscaler/fastapi   New size: 2; reason: cpu resource above target
+10m         Normal   SuccessfulRescale   horizontalpodautoscaler/gateway   New size: 3; reason: cpu resource above target
+9m11s       Normal   SuccessfulRescale   horizontalpodautoscaler/fastapi   New size: 1; reason: All metrics below target
+4m40s       Normal   SuccessfulRescale   horizontalpodautoscaler/gateway   New size: 1; reason: All metrics below target
