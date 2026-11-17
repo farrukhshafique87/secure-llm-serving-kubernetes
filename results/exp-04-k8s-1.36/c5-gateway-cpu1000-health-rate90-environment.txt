@@ -1,0 +1,71 @@
+# Environment record - 2026-11-17T20:21:53Z
+## Host
+Linux Farrukhs-PC 6.18.58.1-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Tue Oct 27 00:24:11 UTC 2026 x86_64 GNU/Linux
+CPU cores: 8
+               total        used        free      shared  buff/cache   available
+Mem:            10Gi       4.2Gi       116Mi       130Mi       6.7Gi       6.5Gi
+## Tool versions
+Docker version 29.6.2, build dfc4efb
+kind v0.33.0 go1.26.7 linux/amd64
+Client Version: v1.37.1
+Kustomize Version: v5.8.1
+v3.21.3+g1ad6e68
+k6 v2.0.0 (commit/8c3be52cc1, go1.26.3, linux/amd64)
+## Cluster
+kind-thesis-cluster
+NAME                           STATUS   ROLES           AGE     VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE                       KERNEL-VERSION                              CONTAINER-RUNTIME
+thesis-cluster-control-plane   Ready    control-plane   4d15h   v1.36.4   172.18.0.4    <none>        Debian GNU/Linux 13 (trixie)   6.18.58.1-microsoft-standard-WSL2 (amd64)   containerd://2.3.4
+thesis-cluster-worker          Ready    <none>          4d15h   v1.36.4   172.18.0.3    <none>        Debian GNU/Linux 13 (trixie)   6.18.58.1-microsoft-standard-WSL2 (amd64)   containerd://2.3.4
+thesis-cluster-worker2         Ready    <none>          4d15h   v1.36.4   172.18.0.2    <none>        Debian GNU/Linux 13 (trixie)   6.18.58.1-microsoft-standard-WSL2 (amd64)   containerd://2.3.4
+## Namespace llm-c5-gateway: workloads, images, resources
+NAME                      READY   UP-TO-DATE   AVAILABLE   AGE    CONTAINERS   IMAGES                                                                                  SELECTOR
+deployment.apps/fastapi   1/1     1            1           4d2h   fastapi      llm-api:1.0.0                                                                           app.kubernetes.io/instance=fastapi,app.kubernetes.io/name=llm-api
+deployment.apps/gateway   1/1     1            1           4d2h   gateway      llm-gateway:1.0.0                                                                       app.kubernetes.io/instance=gateway,app.kubernetes.io/name=llm-gateway
+deployment.apps/ollama    1/1     1            1           4d2h   ollama       ollama/ollama@sha256:292ee7945dfc3d5840a181f3ab86fedb1e66703e02c8af98b50f4da56b7e278c   app=ollama
+
+NAME                      TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE    SELECTOR
+service/fastapi-service   ClusterIP   10.96.43.212    <none>        8010/TCP         4d2h   app.kubernetes.io/name=llm-api
+service/gateway-service   NodePort    10.96.221.125   <none>        8080:30010/TCP   36m    app.kubernetes.io/instance=gateway,app.kubernetes.io/name=llm-gateway
+service/ollama-service    ClusterIP   10.96.49.99     <none>        11434/TCP        4d2h   app=ollama
+
+NAME                               STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE    VOLUMEMODE
+persistentvolumeclaim/ollama-pvc   Bound    pvc-1eec579e-a44e-4fd6-be6e-134a694f3f5b   15Gi       RWO            standard       <unset>                 4d2h   Filesystem
+
+NAME                           READY   STATUS    RESTARTS   AGE   IP               NODE                     NOMINATED NODE   READINESS GATES
+pod/fastapi-5765b44fd9-vvp96   1/1     Running   0          36m   192.168.186.88   thesis-cluster-worker2   <none>           <none>
+pod/gateway-6ffc968784-fbncl   1/1     Running   0          14m   192.168.186.86   thesis-cluster-worker2   <none>           <none>
+pod/ollama-86445c58c5-hv5bb    1/1     Running   0          36m   192.168.3.26     thesis-cluster-worker    <none>           <none>
+fastapi image=llm-api:1.0.0 resources={"limits":{"cpu":"1","memory":"1Gi"},"requests":{"cpu":"500m","memory":"512Mi"}}
+gateway image=llm-gateway:1.0.0 resources={"limits":{"cpu":"1","memory":"256Mi"},"requests":{"cpu":"100m","memory":"128Mi"}}
+ollama image=ollama/ollama@sha256:292ee7945dfc3d5840a181f3ab86fedb1e66703e02c8af98b50f4da56b7e278c resources={"limits":{"cpu":"2","memory":"4Gi"},"requests":{"cpu":"1","memory":"2Gi"}}
+## Model
+NAME            ID              SIZE      MODIFIED   
+qwen2.5:0.5b    a8b0c5157701    397 MB    4 days ago    
+ollama version is 0.35.1
+## Controlled inference parameters
+{"APP_NAME":"LLM API","LLM_KEEP_ALIVE":"24h","LLM_NUM_PREDICT":"64","LLM_SEED":"42","LLM_TEMPERATURE":"0.0","LOG_LEVEL":"INFO","OLLAMA_MAX_ATTEMPTS":"1","OLLAMA_MODEL":"qwen2.5:0.5b","OLLAMA_URL":"http://ollama-service:11434","REQUEST_TIMEOUT":"120","VERSION":"1.0.0"}
+## Network policies / CNI
+No resources found in llm-c5-gateway namespace.
+NAME                                       READY   STATUS    RESTARTS        AGE
+calico-kube-controllers-59d6786855-xwtlw   1/1     Running   1 (2d15h ago)   4d15h
+calico-node-7zksn                          1/1     Running   1 (2d15h ago)   4d15h
+calico-node-g4cfm                          1/1     Running   2 (2d15h ago)   4d15h
+calico-node-xclmm                          1/1     Running   1 (2d15h ago)   4d15h
+calico version: v3.32.2
+calico-node image=quay.io/calico/node:v3.32.2
+## Ingress controller / gateway / metrics server
+NAME   	NAMESPACE	REVISION	UPDATED                                	STATUS  	CHART         	APP VERSION
+traefik	traefik  	1       	2026-11-13 05:38:05.129862531 +0100 CET	deployed	traefik-41.6.1	v3.7.13    
+traefik image=docker.io/traefik:v3.7.13
+gateway image=llm-gateway:1.0.0
+NAME                 	NAMESPACE	REVISION	UPDATED                                	STATUS  	CHART                          	APP VERSION 
+linkerd-control-plane	linkerd  	1       	2026-11-13 05:38:42.785284569 +0100 CET	deployed	linkerd-control-plane-2026.10.1	edge-26.10.1
+linkerd-crds         	linkerd  	2       	2026-11-15 07:16:21.47563223 +0100 CET 	deployed	linkerd-crds-2026.10.1         	            
+linkerd-destination image=cr.l5d.io/linkerd/controller:edge-26.10.1
+linkerd-identity image=cr.l5d.io/linkerd/controller:edge-26.10.1
+linkerd-proxy-injector image=cr.l5d.io/linkerd/controller:edge-26.10.1
+metrics-server image=registry.k8s.io/metrics-server/metrics-server:v0.9.0
+No resources found in llm-c5-gateway namespace.
+## Git
+5588421e77b14b6126fc64cee6bd65b43610e7b8
+?? results/exp-04-k8s-1.36/

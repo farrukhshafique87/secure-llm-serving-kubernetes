@@ -1,0 +1,7 @@
+run_id=exp-04-k8s-1.36-c5-gateway-health-rate70-r3
+start=2026-11-17T23:01:29Z
+end=2026-11-17T23:03:29Z
+script=tests/k6/health-path.js vus=1 rate=70 duration=2m base_url=http://localhost:8010
+monitor=1
+host_cpu=busy 17.2% steal 0.0% of 8 CPUs
+valid=true (no pod restarts during run)
