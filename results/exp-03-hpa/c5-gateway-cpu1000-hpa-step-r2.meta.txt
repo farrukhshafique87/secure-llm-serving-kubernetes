@@ -1,0 +1,7 @@
+run_id=exp-03-hpa-c5-gateway-cpu1000-hpa-step-r2
+start=2026-11-16T07:05:00Z
+end=2026-11-16T07:17:20Z
+script=tests/k6/health-step.js vus=1 rate=20 duration=12m20s base_url=http://localhost:8010
+monitor=1
+host_cpu=busy 21.3% steal 0.0% of 8 CPUs
+valid=true (no pod restarts during run)
