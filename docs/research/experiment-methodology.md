@@ -962,3 +962,52 @@ throttling. Heavy throttling is therefore not necessary for a collapse in this
 setup; with only one such run, the cause stays open, as in §10.4 and §12.4.
 The overhead per request of the gateway is stable at about +3 ms up to
 90 req/s in both experiments.
+
+## 15. EXP-04 re-run on Kubernetes v1.36
+
+EXP-04 (2026-10-20) compared the gateway with a 500 m and a 1000 m CPU limit on
+Kubernetes v1.31. It is repeated on the v1.36.4 cluster with its own protocol,
+so that every Kind experiment that EXP-07 refers to exists on the same
+Kubernetes version. The re-run is a new experiment with its own folder; the
+EXP-04 results stay unchanged.
+
+### 15.1 What changed since EXP-04
+
+As §14.1: Kind v0.33.0 with Kubernetes v1.36.4, `llm-api` rebuilt from unchanged
+sources, the gateway pinned to the api node, the measurement lock and the host
+CPU record. Unchanged: images, model, inference parameters, the two gateway
+limits (500 m and 1000 m), all other requests and limits, k6 scripts.
+
+### 15.2 Design
+
+As EXP-04 (§10.1): `/health` on c0-baseline, c5-gateway (500 m) and
+c5-gateway-cpu1000 (1000 m) at 50, 60, 70, 80, 90 and 100 req/s, c0 and
+c5-gateway-cpu1000 also at 120 and 150 req/s; run settings as EXP-02 (2 min,
+30 s warm-up, 60 s cool-down), `MONITOR=1`, 3 repetitions. The start
+configuration rotates per repetition: r1 c0, 500 m, 1000 m; r2 500 m, 1000 m,
+c0; r3 1000 m, c0, 500 m. 66 runs, about 4 h.
+
+Command: `EXP=exp-04-k8s-1.36 MONITOR=1 PATHS=health ./scripts/measure-load.sh
+<config> <n>`, with `RATES="50 60 70 80 90 100 120 150"` for c0 and
+c5-gateway-cpu1000. Results: `results/exp-04-k8s-1.36/`; tables:
+`scripts/load_table.py` and `scripts/throttle_table.py`. No pilot: levels and
+settings are those of EXP-04.
+
+### 15.3 Hypotheses (stated before the runs)
+
+* **H4.3 (1000 m).** The gateway with 1000 m is throttled for less than 5 % of
+  any 1-minute window up to 150 req/s, and none of its runs collapses at 50 to
+  100 req/s (EXP-04: at most 1.3 %; EXP-03 on v1.36.4: at most 0.7 %).
+* **H4.4 (cost per request).** As H4.2: at 50 req/s the median overhead of the
+  two versions differs by less than 0.5 ms, and at 90 and 100 req/s the 1000 m
+  version has an equal or lower median overhead than the 500 m version.
+* **H4.5 (500 m).** The gateway with 500 m is throttled more at 100 than at
+  50 req/s, with a 1-minute maximum at 100 req/s between 5 and 50 % (EXP-04:
+  18.1 %; EXP-02 re-run: 21.7 %).
+
+### 15.4 How the result is read
+
+Runs are classified as in §9.6 and throttling is read as in §10.3. If neither
+version collapses, the collapse part of H4.3 counts as met but says little
+(§10.3); throttling and median overhead carry the result. As in §11.4,
+differences to EXP-04 are reported but not assigned to one cause.
