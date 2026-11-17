@@ -850,3 +850,55 @@ distances of H1.1 to H1.3 from this re-run as well.
 The unsecured stack performs the same on Kubernetes v1.36.4 as on v1.31 within
 these margins, so the v1.36.4 values can stand in for EXP-01 as the Kind
 reference for EXP-07.
+
+## 14. EXP-02 re-run on Kubernetes v1.36
+
+EXP-02 (2026-10-17) measured how the overhead of the gateway (c5) and of all
+controls (c6) behaves when the load rises, on Kubernetes v1.31. It is repeated
+on the v1.36.4 cluster with its own protocol, so that the load behaviour that
+EXP-07 is compared against comes from the same Kubernetes version. The re-run is
+a new experiment with its own folder; the EXP-02 results stay unchanged.
+
+### 14.1 What changed since EXP-02
+
+As §11.1: Kind v0.33.0 with Kubernetes v1.36.4, `llm-api` rebuilt from unchanged
+sources, and the gateway pinned to the api node (in EXP-02 it ran on the
+inference node next to Ollama). New since EXP-02: the measurement lock and the
+host CPU record (`host_cpu=`). Unchanged: model, Ollama and gateway images,
+inference parameters, resource requests and limits (gateway 500 m), k6 scripts.
+
+### 14.2 Design
+
+As EXP-02 (§9.1): `/health` on c0-baseline, c5-gateway and c6-all at 50, 60, 70,
+80, 90 and 100 req/s (c0 also 150 and 200), `/chat` on c0-baseline and c6-all at
+1, 2 and 4 VUs; same run settings, `MONITOR=1`, 3 repetitions. The start
+configuration rotates per repetition: r1 c0, c5, c6; r2 c5, c6, c0; r3 c6, c0,
+c5. 78 runs, about 6 h.
+
+Command: `EXP=exp-02-k8s-1.36 MONITOR=1 ./scripts/measure-load.sh <config> <n>`,
+with `RATES="50 60 70 80 90 100 150 200"` for c0 and `PATHS=health` for c5.
+Results: `results/exp-02-k8s-1.36/`; tables: `scripts/load_table.py` and
+`scripts/throttle_table.py` (throttling and host CPU per run). No pilot: levels
+and settings are those of EXP-02.
+
+### 14.3 Hypotheses (stated before the runs)
+
+* **H2.3 (`/chat`).** As in EXP-02: throughput levels off from 2 VUs, and c0 and
+  c6 overlap at every level. At 2 and 4 VUs the throughput of each configuration
+  is within 10 % of EXP-02 (0.42 to 0.43 req/s for c0, 0.45 to 0.46 for c6).
+* **H2.4 (`/health`, overhead).** From 50 to 90 req/s the median overhead
+  (runs without collapse) is between +2 and +4 ms for c5 and between +4 and
+  +7 ms for c6 at every level, as in EXP-02 (+2.66 to +3.38 and +5.33 to
+  +6.92 ms).
+* **H2.5 (`/health`, collapse).** c0 has no collapsed run up to 200 req/s. Every
+  collapsed run of c5 or c6 is a run in which the gateway container was
+  throttled for at least 50 % of a 1-minute window, as all five collapsed runs
+  of EXP-02 were.
+
+### 14.4 How the result is read
+
+Runs are classified as in §9.6; the rule of §9.3 is reported as well. As in
+§11.4, differences to EXP-02 are reported but not assigned to one cause: the
+Kubernetes version, the Kind version and the gateway placement changed
+together. If no run collapses, the second part of H2.5 cannot be tested; the
+throttling of the gateway per level is reported instead.
