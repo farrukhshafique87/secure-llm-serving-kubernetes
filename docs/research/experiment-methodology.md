@@ -765,3 +765,53 @@ minute but did not help. For the thesis this means: on the request path
 behind the API gateway, capacity has to be in place before a load step;
 CPU-based autoscaling alone did not provide it for a client that keeps its
 connections open.
+
+## 13. EXP-01 re-run on Kubernetes v1.36
+
+EXP-01 (2026-10-06) gave the reference values of the unsecured stack on
+Kubernetes v1.31: `/chat` latency and tokens per second, `/health` latency, and
+the CPU and memory of `fastapi` and Ollama. EXP-07 compares Kind and AKS on
+v1.36, so EXP-01 is repeated on the v1.36.4 cluster with its own protocol. The
+re-run is a new experiment with its own folder; the EXP-01 results stay
+unchanged.
+
+### 13.1 What changed since EXP-01
+
+As §11.1 (Kind v0.33.0 with Kubernetes v1.36.4, `llm-api` rebuilt from
+unchanged sources, digest `58870146…`). The gateway placement does not matter
+here: c0 has no gateway. New since EXP-01: the measurement lock and the host CPU
+record (`host_cpu=` in the `.meta.txt`), neither of which changes what k6
+measures. Unchanged: model `qwen2.5:0.5b` (ID `a8b0c5157701`), Ollama image
+digest, inference parameters, resource requests and limits, k6 scripts.
+
+### 13.2 Design
+
+As EXP-01: c0-baseline only, `/chat` (1 VU, 5 min measured) and `/health`
+(50 req/s, 2 min measured), each with 1 min warm-up and 2 min cool-down
+(protocol of §4), `MONITOR=0`, 3 repetitions. EXP-01 ran the three `/chat` runs
+first and then the three `/health` runs; the re-run alternates them per
+repetition (`scripts/measure-config.sh`), which only changes the order.
+
+Command: `EXP=exp-01-k8s-1.36 WARMUP=1m make measure CONFIG=c0-baseline REP=<n>`
+for n = 1, 2, 3. Results: `results/exp-01-k8s-1.36/`; table:
+`scripts/summarize_results.py` (includes tokens per second). No pilot: the
+configuration, scripts and settings are the ones of EXP-01 and EXP-06 re-run.
+
+### 13.3 Hypotheses (stated before the runs)
+
+* **H1.1 (`/chat`).** Average latency and tokens per second differ from EXP-01
+  (2001.20 ms, 19.99 tokens/s) by less than 5 %.
+* **H1.2 (`/health`).** Average latency differs from EXP-01 (1.97 ms) by less
+  than 0.3 ms.
+* **H1.3 (resources).** CPU of Ollama during `/chat` and of `fastapi` during
+  `/health` differ from EXP-01 (1649 m and 87 m) by less than 10 %.
+
+### 13.4 How the result is read
+
+Values are means over the three repetitions with their min-max range, as in the
+EXP-01 summary. A hypothesis holds if the mean of the re-run is within the
+stated distance of the EXP-01 mean. As in §11.4, a difference is reported but
+not assigned to one cause, since the Kubernetes version, the Kind version and
+the image build changed together. The c0 runs of the EXP-06 re-run (§11.5),
+taken with a 2 min warm-up, are a second v1.36.4 reference and are compared
+post-hoc.
