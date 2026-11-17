@@ -1,0 +1,7 @@
+run_id=exp-02-k8s-1.36-c0-baseline-health-rate150-r1
+start=2026-11-17T01:40:53Z
+end=2026-11-17T01:42:53Z
+script=tests/k6/health-path.js vus=1 rate=150 duration=2m base_url=http://localhost:8010
+monitor=1
+host_cpu=busy 13.2% steal 0.0% of 8 CPUs
+valid=true (no pod restarts during run)

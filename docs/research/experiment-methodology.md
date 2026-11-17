@@ -902,3 +902,63 @@ Runs are classified as in §9.6; the rule of §9.3 is reported as well. As in
 Kubernetes version, the Kind version and the gateway placement changed
 together. If no run collapses, the second part of H2.5 cannot be tested; the
 throttling of the gateway per level is reported instead.
+
+### 14.5 Results (17 Nov 2026, 3 repetitions, `MONITOR=1`)
+
+78 runs, all valid (no pod restarts), 01:19 to 06:48 UTC. Data:
+`results/exp-02-k8s-1.36/`; tables: `load-summary.md` (`scripts/load_table.py`)
+and `throttling-summary.md` with the host CPU (`scripts/throttle_table.py`). The
+host was at most 23.9 % busy during `/health` runs and at most 38.2 % during
+`/chat` runs, with no steal time.
+
+**`/chat` (H2.3).**
+
+| VUs | c0 req/s (EXP-02) | c6 req/s (EXP-02) | c0 avg ms (runs) | c6 avg ms (runs) |
+| --- | ----------------- | ----------------- | ---------------- | ---------------- |
+| 1   | 0.334 (0.289)     | 0.325 (0.300)     | 1997.59 (1958.91-2046.68) | 2088.90 (1946.29-2365.04) |
+| 2   | 0.477 (0.421)     | 0.453 (0.446)     | 3166.87 (3045.91-3242.96) | 3412.06 (3059.47-3811.87) |
+| 4   | 0.483 (0.430)     | 0.460 (0.457)     | 7145.48 (6951.10-7279.21) | 7605.61 (7033.82-8713.20) |
+
+Partly supported. Throughput levels off from 2 VUs, and c0 and c6 overlap at
+every level. c6 is within 2 % of EXP-02 at 2 and 4 VUs; c0 is 13 and 12 %
+higher, outside the stated 10 %. In EXP-02 c0 was slower than in EXP-01 at
+1 VU (2596.50 against 2001.20 ms); the re-run is close to EXP-01 and to the
+EXP-01 re-run (§13.5).
+
+**`/health`.** Median of the runs without collapse, overhead against c0 (ms):
+
+| Rate req/s | c0 median | Δ c5 | Δ c6 | Δ c5 EXP-02 | Δ c6 EXP-02 |
+| ---------- | --------- | ----- | ----- | ----------- | ----------- |
+| 50         | 1.89      | +2.64 | +3.97 | +3.38       | +5.62       |
+| 60         | 1.85      | +2.77 | +4.67 | +2.81       | +5.45       |
+| 70         | 1.80      | +2.96 | +4.15 | +2.66       | +6.92       |
+| 80         | 1.78      | +2.99 | +4.88 | +3.27       | +5.87       |
+| 90         | 1.75      | +3.10 | +5.08 | +3.05       | +5.33       |
+| 100        | 1.71      | +2.62 (2 runs) | +4.35 | +3.00 (2 runs) | n/a |
+
+**H2.4.** Not supported, by a small margin: c5 is between +2.64 and +3.10 ms at
+50 to 90 req/s as predicted, and c6 between +4.15 and +5.08 ms from 60 to
+90 req/s, but at 50 req/s c6 is +3.97 ms, 0.03 ms below the stated range. The
+c6 overhead is lower than in EXP-02 at every level from 50 to 90 req/s, by 0.25
+to 2.77 ms.
+
+**H2.5.** The first part is supported: c0 had no collapsed run up to 200 req/s
+(no dropped request at all). The second part is not: one run collapsed (c5,
+100 req/s, repetition 2, 356 requests dropped, 3.0 %) while the gateway was
+throttled for at most 21.7 % of a 1-minute window (mean 6.6 %). The only other
+run with drops was transient (c6, 90 req/s, repetition 3, 62 dropped, gateway
+throttling at most 21.6 %). The highest gateway throttling of the whole re-run
+was 21.7 %, against up to 100 % in EXP-02.
+
+**Post-hoc: gateway CPU.** The gateway in c5 used 147 to 309 m from 50 to
+100 req/s, against 196 to 384 m in EXP-02; it stayed further from its 500 m
+limit, which fits the lower throttling. The gateway now runs on the api node
+instead of next to Ollama, but this experiment cannot separate that from the
+other changes (§14.4).
+
+**Together with EXP-02.** On v1.36.4 the security path collapsed in 1 of 36
+gateway runs (EXP-02: 5), and the one collapse happened without heavy gateway
+throttling. Heavy throttling is therefore not necessary for a collapse in this
+setup; with only one such run, the cause stays open, as in §10.4 and §12.4.
+The overhead per request of the gateway is stable at about +3 ms up to
+90 req/s in both experiments.
