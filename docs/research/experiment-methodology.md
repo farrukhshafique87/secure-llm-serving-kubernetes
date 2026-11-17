@@ -1011,3 +1011,44 @@ Runs are classified as in §9.6 and throttling is read as in §10.3. If neither
 version collapses, the collapse part of H4.3 counts as met but says little
 (§10.3); throttling and median overhead carry the result. As in §11.4,
 differences to EXP-04 are reported but not assigned to one cause.
+
+### 15.5 Results (17 Nov 2026, 3 repetitions, `MONITOR=1`)
+
+66 runs, all valid (no pod restarts), 19:16 to 23:14 UTC. Data:
+`results/exp-04-k8s-1.36/`; tables: `load-summary.md` (`scripts/load_table.py`)
+and `throttling-summary.md` with the host CPU (`scripts/throttle_table.py`).
+The host was at most 22.7 % busy, with no steal time. No run dropped a request:
+all 66 runs are stable (§9.6).
+
+| Rate req/s | c0 median ms | Δ c5 500 m ms | Δ c5 1000 m ms | Gateway throttling max, 500 m | 1000 m |
+| ---------- | ------------ | ------------- | -------------- | ----------------------------- | ------ |
+| 50         | 1.92         | +2.03         | +2.00          | 0.0 %                         | 0.0 %  |
+| 60         | 1.84         | +2.12         | +2.08          | 0.0 %                         | 0.0 %  |
+| 70         | 1.79         | +2.06         | +2.08          | 0.0 %                         | 0.0 %  |
+| 80         | 1.79         | +2.06         | +2.11          | 0.5 %                         | 0.0 %  |
+| 90         | 1.74         | +2.16         | +2.12          | 5.2 %                         | 0.0 %  |
+| 100        | 1.71         | +2.24         | +2.15          | 14.1 %                        | 0.0 %  |
+| 120        | 1.67         | -             | +2.17          | -                             | 0.2 %  |
+| 150        | 1.57         | -             | +2.33          | -                             | 0.9 %  |
+
+Δ: median of the runs minus the c0 median (n = 3). Throttling: highest
+1-minute value in any run of the level.
+
+**H4.3.** Supported: with 1000 m the gateway was throttled for at most 0.9 %
+(150 req/s), and no run collapsed. As no run of the 500 m version collapsed
+either, the collapse part carries little weight (§15.4).
+
+**H4.4.** Supported. At 50 req/s the two versions differ by 0.03 ms; at 90 and
+100 req/s the 1000 m version is 0.04 and 0.09 ms lower.
+
+**H4.5.** Supported: the 500 m gateway was not throttled at 50 req/s and at
+most 14.1 % at 100 req/s. It used 147 to 291 m from 50 to 100 req/s, the
+1000 m version 136 to 263 m.
+
+**Together with EXP-04.** In EXP-04 one run of the 1000 m version collapsed at
+150 req/s and three runs were transient (one per configuration); in the re-run no run dropped a request,
+up to 150 req/s, matching EXP-03 on v1.36.4 (§12.4). The overhead of the
+gateway is +2.00 to +2.33 ms at every level and does not depend on the limit
+(EXP-04: +2.05 to +3.50 ms). On v1.36.4 the 500 m limit leaves enough headroom
+up to 100 req/s in this session; the limit shows only as moderate throttling
+at 90 and 100 req/s.
