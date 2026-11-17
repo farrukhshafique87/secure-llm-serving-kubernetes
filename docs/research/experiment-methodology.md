@@ -815,3 +815,38 @@ not assigned to one cause, since the Kubernetes version, the Kind version and
 the image build changed together. The c0 runs of the EXP-06 re-run (§11.5),
 taken with a 2 min warm-up, are a second v1.36.4 reference and are compared
 post-hoc.
+
+### 13.5 Results (17 Nov 2026, 3 repetitions, `MONITOR=0`)
+
+6 runs, all valid (no pod restarts), 00:21 to 00:58 UTC. Data:
+`results/exp-01-k8s-1.36/`; table: `summary.md` (`scripts/summarize_results.py`).
+The host was 32.5 to 34.5 % busy during `/chat` and 9.4 to 12.5 % during
+`/health`, with no steal time.
+
+| Value | EXP-01 (v1.31) | Re-run (v1.36.4) | Difference |
+| ----- | -------------- | ---------------- | ---------- |
+| `/chat` average | 2001.20 ms | 2020.13 ms (1982.74-2092.73) | +0.9 % |
+| Tokens per second | 19.99 | 19.90 (19.32-20.21) | -0.5 % |
+| `/health` average | 1.97 ms | 1.96 ms (1.94-1.98) | -0.01 ms |
+| Ollama CPU, `/chat` | 1649 m | 1678 m (1669-1694) | +1.8 % |
+| `fastapi` CPU, `/health` | 87 m | 88 m (86-90) | +1.1 % |
+
+**H1.1.** Supported: `/chat` latency +0.9 %, tokens per second -0.5 %. The
+first `/chat` run was the slowest (average 2092.73 ms, slowest request
+4384 ms); without it the range is 1982.74 to 1984.91 ms.
+
+**H1.2.** Supported: the `/health` average differs by 0.01 ms.
+
+**H1.3.** Supported: Ollama CPU +1.8 %, `fastapi` CPU +1.1 %.
+
+**Post-hoc: memory.** Not part of a hypothesis. Memory was higher than in
+EXP-01: Ollama 691 against 647 Mi, `fastapi` 62 against 47 Mi during `/health`.
+
+**Post-hoc: EXP-06 re-run.** The c0 runs of the EXP-06 re-run (§11.5, 2 min
+warm-up) gave 1992.76 ms and 20.11 tokens per second on `/chat`, 1.99 ms on
+`/health`, and 1665 m (Ollama) and 88 m (`fastapi`) of CPU; all within the
+distances of H1.1 to H1.3 from this re-run as well.
+
+The unsecured stack performs the same on Kubernetes v1.36.4 as on v1.31 within
+these margins, so the v1.36.4 values can stand in for EXP-01 as the Kind
+reference for EXP-07.
