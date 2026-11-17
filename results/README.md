@@ -10,6 +10,7 @@ The overhead tables come from [`exp-06-final/overhead-summary.md`](exp-06-final/
 | `exp-01-baseline` | EXP-01: baseline (c0), 3 runs on `/chat` and 3 on `/health`; `summary.md` from `scripts/summarize_results.py` (includes tokens/s) | Final |
 | `exp-01-k8s-1.36` | EXP-01 re-run on Kubernetes v1.36.4: c0, 3 runs on `/chat` and 3 on `/health`, 1 min warm-up, `MONITOR=0`; `summary.md` from `scripts/summarize_results.py` | Final |
 | `exp-02-load` | EXP-02: `/health` on c0, c5, c6 at 50-100 req/s (c0 also 150, 200) and `/chat` on c0, c6 at 1, 2, 4 VUs, 3 repetitions, `MONITOR=1` | Final |
+| `exp-02-k8s-1.36` | EXP-02 re-run on Kubernetes v1.36.4: same levels and settings as `exp-02-load`, 3 repetitions, `MONITOR=1`, with throttling and host CPU per run | Final |
 | `exp-02-pilot` | EXP-02 pilot: `/health` on c0, c5 and c6 at 50 to 200 req/s, 1 run each, to choose the sweep levels | Pilot, not used for conclusions |
 | `exp-03-replicas` | EXP-03: `/health` on c0 and c5-gateway-cpu1000 with 1, 2 and 3 replicas at 100, 150, 200 req/s, 3 repetitions, `MONITOR=1`, with throttling and host CPU per run | Final |
 | `exp-03-pilot` | EXP-03 pilot: the same 6 configurations, 1 run per level, to check the replica switch and the host CPU record | Pilot, not used for conclusions |

@@ -1,0 +1,7 @@
+run_id=exp-02-k8s-1.36-c6-all-chat-vus4-r1
+start=2026-11-17T03:04:31Z
+end=2026-11-17T03:07:39Z
+script=tests/k6/baseline.js vus=4 rate=- duration=3m base_url=https://localhost:8443
+monitor=1
+host_cpu=busy 38.2% steal 0.0% of 8 CPUs
+valid=true (no pod restarts during run)
