@@ -385,8 +385,8 @@ gateway or the CPU of the host, which also runs k6; neither was measured here.
 
 ## 11. EXP-06 re-run on Kubernetes v1.36
 
-EXP-07 runs on AKS, which no longer offers Kubernetes 1.31. To compare Kind and AKS
-on the same Kubernetes minor version (RQ2), EXP-06 is repeated on Kind with
+EXP-07 runs on managed clouds, which no longer offer Kubernetes 1.31. To compare
+Kind and the managed clouds on the same Kubernetes minor version (RQ2), EXP-06 is repeated on Kind with
 Kubernetes v1.36. The re-run is a new experiment with its own folder; the
 original EXP-06 results stay unchanged.
 
@@ -770,8 +770,8 @@ connections open.
 
 EXP-01 (2026-10-06) gave the reference values of the unsecured stack on
 Kubernetes v1.31: `/chat` latency and tokens per second, `/health` latency, and
-the CPU and memory of `fastapi` and Ollama. EXP-07 compares Kind and AKS on
-v1.36, so EXP-01 is repeated on the v1.36.4 cluster with its own protocol. The
+the CPU and memory of `fastapi` and Ollama. EXP-07 compares Kind and managed
+clouds on v1.36, so EXP-01 is repeated on the v1.36.4 cluster with its own protocol. The
 re-run is a new experiment with its own folder; the EXP-01 results stay
 unchanged.
 
@@ -1052,3 +1052,93 @@ gateway is +2.00 to +2.33 ms at every level and does not depend on the limit
 (EXP-04: +2.05 to +3.50 ms). On v1.36.4 the 500 m limit leaves enough headroom
 up to 100 req/s in this session; the limit shows only as moderate throttling
 at 90 and 100 req/s.
+
+## 16. EXP-07 on managed clouds
+
+EXP-07 repeats the EXP-06 re-run (§11) on managed Kubernetes services to answer
+RQ2: does the deployment environment change the overhead of the controls? Four
+platforms are planned: Google Kubernetes Engine (GKE), Amazon Elastic
+Kubernetes Service (EKS), OVHcloud Managed Kubernetes Service (MKS) and Azure
+Kubernetes Service (AKS). Each runs on the free credits of a new account (AKS
+on credits requested from the supervisor). The Kind reference is the set of
+v1.36.4 re-runs (§11.5, §13.5, §14.5, §15.5). Results are reported per
+platform; absolute latencies are not compared as a cost of a control.
+
+### 16.1 What stays the same on every platform
+
+Model `qwen2.5:0.5b` (ID `a8b0c5157701`), Ollama image digest, the `llm-api` and
+`llm-gateway` images used on Kind (pushed unchanged to one public registry and
+pulled by digest on every platform; verified on the nodes by config digest),
+inference parameters, resource requests and limits, overlays c0 to c6, Linkerd
+and Traefik chart versions, metrics-server version, k6 version and scripts, and
+the run protocol (§4). Every platform has two worker nodes labelled
+`role=inference` and `role=api`, each with 4 vCPU and 16 GiB (x86-64). k6 runs
+on a separate VM with 4 vCPU in the same region and network, and reaches the
+`role=api` node by its private IP on NodePort 30010 (Traefik as NodePort for c4
+and c6). No cloud load balancer is in the measured path.
+
+### 16.2 What differs between platforms (recorded per run in `*-environment.txt`)
+
+| Item | Kind re-run | GKE | EKS | OVH MKS | AKS |
+| ---- | ----------- | --- | --- | ------- | --- |
+| Cluster | 3 Docker nodes on one WSL2 host | Standard, zonal | managed control plane | managed control plane (free tier) | managed control plane |
+| CNI | Calico v3.32.2 | GKE default | Amazon VPC CNI | Canal | Azure CNI Overlay |
+| NetworkPolicy engine | Calico | Calico if offered for the cluster version, otherwise Dataplane V2 (Cilium) | Calico, policy only | Calico (Canal) | Calico |
+| Node CPUs | shared with k6 | dedicated vCPUs | dedicated vCPUs | dedicated vCPUs | dedicated vCPUs |
+
+Kubernetes is v1.36 where offered, otherwise the nearest minor version
+(recorded as a deviation). Region, instance types and the exact Kubernetes,
+CNI and Calico versions are fixed when a cluster is created and recorded before
+its first run. The NetworkPolicy engine is the one platform difference that
+touches a control (c2, c6); it is reported with every c2 and c6 result.
+
+Before the runs on a platform: the EXP-05 verification on that cluster (all
+checks pass). Once for all platforms: the measurement scripts take the target
+URL of each configuration from the environment (change in its own PR, no change
+to the k6 scripts or the application).
+
+### 16.3 Design
+
+Per platform, in the order GKE, EKS, OVH, AKS (AKS when its credits arrive):
+
+* **Part A**, as §11.2: all seven configurations, `/chat` (1 VU, 5 min measured,
+  2 min warm-up) and `/health` (50 req/s, 2 min measured, 2 min warm-up),
+  `MONITOR=0`, 3 repetitions in the rotated order of §11.2. Results:
+  `results/exp-07-<platform>/`; tables: `scripts/overhead_table.py`.
+* **Part B**, a short load check: `/health` at 50 and 100 req/s for c0, c5 and
+  c6 with the EXP-02 settings (§9.1), 3 repetitions interleaved over the
+  configurations, rule of §9.3 and per-run classes of §9.6. Throttling from
+  Prometheus in the cluster (`scripts/throttle_table.py`). Results:
+  `results/exp-07-<platform>-load/`. Kind references: §14.5 and §15.5.
+
+`<platform>` is `gke`, `eks`, `ovh` or `aks`. A platform's cluster is deleted
+after its runs. If the credits or the time do not allow all four platforms,
+the platforms that were measured are named in the results, and the hypotheses
+are evaluated for those only; a missing platform is not replaced by
+estimates.
+
+### 16.4 Hypotheses (stated before the runs)
+
+H7.1 to H7.4 are evaluated on each platform separately.
+
+* **H7.1 (`/health`, verdicts).** Every configuration gets the same verdict as
+  in the Kind re-run: C1 and C2 within noise; C3, C4, C5 and C6 distinct, higher.
+* **H7.2 (`/health`, ranking).** The single controls keep their order of added
+  latency: mTLS < TLS < gateway, and C6 adds more than any single control.
+* **H7.3 (`/chat`).** No configuration is distinct, higher than the baseline.
+* **H7.4 (load).** No level of Part B is saturated for c0, c5 or c6, and the
+  gateway (500 m limit) is throttled for at most 21.7 % of a 1-minute window at
+  100 req/s, the highest value of the 500 m gateway at this level on Kind
+  v1.36.4 (§14.5; §15.5: 14.1 %).
+* **H7.5 (across platforms).** On every measured platform the `/health`
+  overhead of C6 lies between half and twice the Kind value (+4.39 ms, §11.5),
+  that is, between +2.2 and +8.8 ms.
+
+### 16.5 How the result is read
+
+The verdict rule of §6 applies unchanged. RQ2 is answered by comparing the
+verdicts, the ranking and the added latency (Δ ms) of each control between Kind
+and each platform, and between the platforms. A difference cannot be assigned
+to one cause, because the platform, the network, the node CPUs, the CNI and the
+load generator placement change together; for c2 and c6 the NetworkPolicy
+engine is named with the result.
