@@ -20,7 +20,7 @@ The unsecured baseline is compared with the fully secured configuration (RBAC, N
 
 ### RQ2 — Effect of the Deployment Environment
 
-**Does the measured security overhead differ between a local cluster (Kind) and a managed cloud Kubernetes cluster (AKS, EKS or GKE)?**
+**Does the measured security overhead differ between a local cluster (Kind) and managed cloud Kubernetes clusters (GKE, EKS, OVHcloud MKS and AKS)?**
 
 The baseline-versus-secure comparison of RQ1 is repeated in each environment. Results are reported per environment, because Kind results do not automatically represent managed cloud behaviour.
 
@@ -334,11 +334,11 @@ Each configuration is measured on two paths: the full `/chat` inference path and
 ### EXP-07 — Local versus Managed Cloud
 
 **Purpose:**
-Repeat EXP-06 unchanged on a managed cloud Kubernetes cluster and compare the security overhead with the local Kind result (RQ2).
+Repeat EXP-06 unchanged on managed cloud Kubernetes clusters and compare the security overhead with the local Kind result (RQ2).
 
 **Independent variable:**
 
-* Environment (Kind; one managed cloud: AKS, EKS or GKE).
+* Environment (Kind; managed clouds: GKE, EKS, OVHcloud MKS, AKS; methodology §16).
 
 **Controlled variables:**
 
@@ -433,7 +433,7 @@ Changes to hardware, model version, workload, resource allocation, or deployment
 | EXP-04 Resource Allocation     | Completed (Kind)     | Re-run on v1.36.4 done, methodology §15.5 |
 | EXP-05 Security Verification   | Completed            | -                             |
 | EXP-06 Secure Performance      | Kind done            | Repeat on cloud (EXP-07)      |
-| EXP-07 Local vs Cloud          | Planned              | Needs managed cloud access    |
+| EXP-07 Local vs Cloud          | Designed             | Methodology §16; GKE, EKS, OVH on free credits, AKS on Azure credits |
 
 ---
 
