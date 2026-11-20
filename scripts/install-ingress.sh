@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Install the Traefik ingress controller on Kind. Re-runnable.
+# Install the Traefik ingress controller. Re-runnable.
 # Chart version is pinned (see below). Override: TRAEFIK_CHART_VERSION=<x.y.z>
+# Values: kind/traefik-values.yaml; on a managed cloud (EXP-07)
+#   TRAEFIK_VALUES=cloud/traefik-values.yaml
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -15,7 +17,7 @@ VERSION_ARGS=(--version "$TRAEFIK_CHART_VERSION")
 helm upgrade --install traefik traefik/traefik \
   --namespace traefik --create-namespace \
   "${VERSION_ARGS[@]}" \
-  -f kind/traefik-values.yaml
+  -f "${TRAEFIK_VALUES:-kind/traefik-values.yaml}"
 
 kubectl -n traefik rollout status deploy/traefik --timeout=180s
 
