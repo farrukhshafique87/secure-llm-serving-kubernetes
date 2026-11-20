@@ -433,7 +433,7 @@ Changes to hardware, model version, workload, resource allocation, or deployment
 | EXP-04 Resource Allocation     | Completed (Kind)     | Re-run on v1.36.4 done, methodology §15.5 |
 | EXP-05 Security Verification   | Completed            | -                             |
 | EXP-06 Secure Performance      | Kind done            | Repeat on cloud (EXP-07)      |
-| EXP-07 Local vs Cloud          | Designed             | Methodology §16; GKE, EKS, OVH on free credits, AKS on Azure credits |
+| EXP-07 Local vs Cloud          | Designed             | Methodology §16               |
 
 ---
 

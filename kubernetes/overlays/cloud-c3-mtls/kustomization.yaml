@@ -1,0 +1,10 @@
+# EXP-07: kind-c3-mtls on a managed cloud. Same objects as on Kind; only the
+# application images come from the registry (components/cloud-images).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../kind-c3-mtls
+
+components:
+  - ../../components/cloud-images

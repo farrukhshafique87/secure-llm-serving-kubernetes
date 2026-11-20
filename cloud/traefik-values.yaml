@@ -1,0 +1,26 @@
+# Traefik on a managed cloud (EXP-07). Same chart, ports and limits as on Kind
+# (kind/traefik-values.yaml), with the hostPorts on the role=api node, the node
+# that the k6 VM reaches. On Kind, Traefik runs on the control-plane node, which
+# a managed cluster does not expose.
+deployment:
+  replicas: 1
+
+service:
+  type: ClusterIP
+
+ports:
+  web:
+    hostPort: 80
+  websecure:
+    hostPort: 443
+
+nodeSelector:
+  role: api
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "1"
+    memory: "256Mi"

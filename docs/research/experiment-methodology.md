@@ -1059,23 +1059,26 @@ EXP-07 repeats the EXP-06 re-run (§11) on managed Kubernetes services to answer
 RQ2: does the deployment environment change the overhead of the controls? Four
 platforms are planned: Google Kubernetes Engine (GKE), Amazon Elastic
 Kubernetes Service (EKS), OVHcloud Managed Kubernetes Service (MKS) and Azure
-Kubernetes Service (AKS). Each runs on the free credits of a new account (AKS
-on credits requested from the supervisor). The Kind reference is the set of
-v1.36.4 re-runs (§11.5, §13.5, §14.5, §15.5). Results are reported per
-platform; absolute latencies are not compared as a cost of a control.
+Kubernetes Service (AKS). The Kind reference is the set of v1.36.4 re-runs
+(§11.5, §13.5, §14.5, §15.5). Results are reported per platform; absolute
+latencies are not compared as a cost of a control.
 
 ### 16.1 What stays the same on every platform
 
 Model `qwen2.5:0.5b` (ID `a8b0c5157701`), Ollama image digest, the `llm-api` and
-`llm-gateway` images used on Kind (pushed unchanged to one public registry and
-pulled by digest on every platform; verified on the nodes by config digest),
-inference parameters, resource requests and limits, overlays c0 to c6, Linkerd
-and Traefik chart versions, metrics-server version, k6 version and scripts, and
-the run protocol (§4). Every platform has two worker nodes labelled
-`role=inference` and `role=api`, each with 4 vCPU and 16 GiB (x86-64). k6 runs
-on a separate VM with 4 vCPU in the same region and network, and reaches the
-`role=api` node by its private IP on NodePort 30010 (Traefik as NodePort for c4
-and c6). No cloud load balancer is in the measured path.
+`llm-gateway` images used on Kind (pushed unchanged to GitHub Container Registry
+and pulled by their manifest digests `58870146…` and `f6a6da4d…`, the same as on
+Kind; verified on the nodes by config digest), inference parameters, resource
+requests and limits, the objects of overlays c0 to c6 (the `cloud-*` overlays
+differ from the `kind-*` overlays only in the image reference), Linkerd and
+Traefik chart versions, k6 version and scripts, and the run protocol (§4).
+Every platform has two worker nodes labelled `role=inference` and `role=api`,
+each with 4 vCPU and 16 GiB (x86-64). k6 runs on a separate VM with 4 vCPU in
+the same region and network. On that VM, `scripts/cloud-entry.sh` maps
+`localhost:8010`, `:8080` and `:8443` in the kernel to NodePort 30010 and to
+Traefik's host ports 80 and 443 on the `role=api` node, as Docker maps them to
+the Kind node; URLs, the ingress host and the TLS certificate therefore stay as
+on Kind. No cloud load balancer is in the measured path.
 
 ### 16.2 What differs between platforms (recorded per run in `*-environment.txt`)
 
@@ -1085,21 +1088,25 @@ and c6). No cloud load balancer is in the measured path.
 | CNI | Calico v3.32.2 | GKE default | Amazon VPC CNI | Canal | Azure CNI Overlay |
 | NetworkPolicy engine | Calico | Calico if offered for the cluster version, otherwise Dataplane V2 (Cilium) | Calico, policy only | Calico (Canal) | Calico |
 | Node CPUs | shared with k6 | dedicated vCPUs | dedicated vCPUs | dedicated vCPUs | dedicated vCPUs |
+| Traefik node | control-plane node | `role=api` node | `role=api` node | `role=api` node | `role=api` node |
 
 Kubernetes is v1.36 where offered, otherwise the nearest minor version
 (recorded as a deviation). Region, instance types and the exact Kubernetes,
 CNI and Calico versions are fixed when a cluster is created and recorded before
 its first run. The NetworkPolicy engine is the one platform difference that
 touches a control (c2, c6); it is reported with every c2 and c6 result.
+metrics-server is installed in the version used on Kind where the platform has
+none; where the platform runs its own, that one is used and its version
+recorded.
 
 Before the runs on a platform: the EXP-05 verification on that cluster (all
-checks pass). Once for all platforms: the measurement scripts take the target
-URL of each configuration from the environment (change in its own PR, no change
-to the k6 scripts or the application).
+checks pass). The scripts select the `cloud-*` overlays with `PLATFORM=cloud`;
+Traefik is installed with `TRAEFIK_VALUES=cloud/traefik-values.yaml`. No change
+to the k6 scripts or the application.
 
 ### 16.3 Design
 
-Per platform, in the order GKE, EKS, OVH, AKS (AKS when its credits arrive):
+Per platform, in the order GKE, EKS, OVH, AKS:
 
 * **Part A**, as §11.2: all seven configurations, `/chat` (1 VU, 5 min measured,
   2 min warm-up) and `/health` (50 req/s, 2 min measured, 2 min warm-up),
@@ -1112,7 +1119,7 @@ Per platform, in the order GKE, EKS, OVH, AKS (AKS when its credits arrive):
   `results/exp-07-<platform>-load/`. Kind references: §14.5 and §15.5.
 
 `<platform>` is `gke`, `eks`, `ovh` or `aks`. A platform's cluster is deleted
-after its runs. If the credits or the time do not allow all four platforms,
+after its runs. If the time does not allow all four platforms,
 the platforms that were measured are named in the results, and the hypotheses
 are evaluated for those only; a missing platform is not replaced by
 estimates.

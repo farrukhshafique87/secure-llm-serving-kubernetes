@@ -25,6 +25,16 @@ config_vars() {
     c5-gateway-cpu1000-hpa) OVERLAY=kind-c5-gateway-cpu1000-hpa; NS=llm-c5-gateway; URL=http://localhost:8010; AUTH=yes ;;
     *) echo "unknown config: $1" >&2; return 1 ;;
   esac
+  # EXP-07: PLATFORM=cloud uses the cloud-* overlays (same objects, application
+  # images from the registry). URLs stay the same; scripts/cloud-entry.sh maps
+  # them to the cluster on the k6 VM.
+  if [ "${PLATFORM:-kind}" = cloud ]; then
+    OVERLAY="cloud-${OVERLAY#kind-}"
+    if [ ! -d "kubernetes/overlays/$OVERLAY" ]; then
+      echo "no cloud overlay for $1 (kubernetes/overlays/$OVERLAY)" >&2
+      return 1
+    fi
+  fi
 }
 
 # overlay_meshed: true when the overlay of the current configuration injects

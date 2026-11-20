@@ -1,0 +1,15 @@
+# Managed clouds (EXP-07): pull the application images from GitHub Container
+# Registry by digest instead of the copies loaded into Kind. The images are the
+# ones used on Kind, pushed unchanged; the digests below are their manifest
+# digests (`docker buildx imagetools inspect`). Ollama is already pinned by
+# digest in the base and pulled from Docker Hub.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+images:
+  - name: llm-api
+    newName: ghcr.io/farrukhshafique87/llm-api
+    digest: sha256:58870146dfad96c46d2e08b88e39affbc1953fae5a95cdf307aac05f6f1966a0
+  - name: llm-gateway
+    newName: ghcr.io/farrukhshafique87/llm-gateway
+    digest: sha256:f6a6da4de04f49ac84e24057f11a6eb1397bd9e6540f6745278fa035a973deac
