@@ -1,0 +1,6 @@
+Waiting for all pods in llm-c2-netpol to be Ready...
+== NetworkPolicies
+PASS  api -> ollama is allowed
+PASS  api -> internet is blocked
+
+passed: 2  failed: 0

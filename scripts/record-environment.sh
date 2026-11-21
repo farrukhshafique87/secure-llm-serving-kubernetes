@@ -14,9 +14,11 @@ F="$OUT/environment.txt"
   echo "CPU cores: $(nproc)"
   free -h | head -2
   echo "## Tool versions"
-  docker --version
-  kind version
-  kubectl version --client
+  echo "platform=${PLATFORM:-kind}"
+  # Docker and Kind exist only on the Kind host, not on the k6 VM (EXP-07).
+  docker --version 2>&1 || true
+  kind version 2>&1 || true
+  kubectl version 2>&1 || true
   helm version --short
   k6 version 2>&1 || true
   echo "## Cluster"

@@ -1,7 +1,9 @@
 # Traefik on a managed cloud (EXP-07). Same chart, ports and limits as on Kind
 # (kind/traefik-values.yaml), with the hostPorts on the role=api node, the node
 # that the k6 VM reaches. On Kind, Traefik runs on the control-plane node, which
-# a managed cluster does not expose.
+# a managed cluster does not expose. HTTP uses host port 8000: on EKS the pod
+# identity agent already holds port 80 on every node (cloud-entry.sh maps
+# localhost:8080 to it).
 deployment:
   replicas: 1
 
@@ -10,7 +12,7 @@ service:
 
 ports:
   web:
-    hostPort: 80
+    hostPort: 8000
   websecure:
     hostPort: 443
 
