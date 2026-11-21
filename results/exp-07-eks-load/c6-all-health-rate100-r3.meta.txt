@@ -1,0 +1,7 @@
+run_id=exp-07-eks-load-c6-all-health-rate100-r3
+start=2026-11-21T14:32:26Z
+end=2026-11-21T14:34:26Z
+script=tests/k6/health-path.js vus=1 rate=100 duration=2m base_url=https://localhost:8443
+monitor=1
+host_cpu=busy 8.4% steal 0.0% of 2 CPUs
+valid=true (no pod restarts during run)

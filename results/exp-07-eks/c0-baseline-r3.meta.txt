@@ -1,0 +1,7 @@
+run_id=exp-07-eks-c0-baseline-r3
+start=2026-11-21T12:22:11Z
+end=2026-11-21T12:27:14Z
+script=tests/k6/baseline.js vus=1 rate=- duration=5m base_url=http://localhost:8010
+monitor=0
+host_cpu=busy 5.4% steal 0.0% of 2 CPUs
+valid=true (no pod restarts during run)

@@ -1157,3 +1157,63 @@ and each platform, and between the platforms. A difference cannot be assigned
 to one cause, because the platform, the network, the node CPUs, the CNI and the
 load generator placement change together; for c2 and c6 the NetworkPolicy
 engine is named with the result.
+
+### 16.6 Results on EKS (21 Nov 2026)
+
+EXP-05 on EKS: 40 of 40 checks pass, the same per configuration as on Kind
+v1.36.4 (`results/exp-05-security-verification/eks/`). Part A: 42 runs, Part B:
+18 runs, all valid (no pod restarts, no failed requests), 08:04 to 14:50 UTC,
+one run at a time. Data: `results/exp-07-eks/` (table `overhead-summary.md`,
+`scripts/overhead_table.py`) and `results/exp-07-eks-load/` (`load-summary.md`,
+`throttling-summary.md`). On EKS, `host_cpu=` describes the k6 VM, not the
+cluster nodes: it was 5.3 to 8.0 % busy in Part A and at most 8.7 % in Part B.
+Deviations: as recorded in §16.2 (region `eu-north-1`, `m7i-flex.large` nodes
+and k6 VM).
+
+`/health` (Part A, Δ avg against c0, ms; Kind re-run §11.5 for comparison):
+
+| Config | Δ ms EKS | Δ % EKS | Verdict EKS | Δ ms Kind |
+| ------ | -------- | ------- | ----------- | --------- |
+| c1-rbac | +0.01 | +0.4 | within noise | +0.04 |
+| c2-netpol | +0.02 | +1.2 | within noise | -0.01 |
+| c3-mtls | +0.41 | +26.2 | distinct, higher | +0.23 |
+| c4-tls | +0.78 | +50.1 | distinct, higher | +0.73 |
+| c5-gateway | +2.19 | +141.5 | distinct, higher | +2.20 |
+| c6-all | +3.64 | +234.6 | distinct, higher | +4.39 |
+
+c0 average: 1.55 ms on EKS, 1.99 ms on Kind. `/chat` c0 average: 1434.30 ms on
+EKS, 1992.76 ms on Kind; every configuration within noise on both.
+
+**H7.1.** Supported on EKS: C1 and C2 within noise, C3 to C6 distinct, higher.
+
+**H7.2.** Supported on EKS: mTLS (+0.41) < TLS (+0.78) < gateway (+2.19), and
+C6 (+3.64) adds more than any single control.
+
+**H7.3.** Supported on EKS: no configuration is distinct, higher on `/chat`
+(Δ between -4.66 and +2.00 ms).
+
+**H7.4.** Supported on EKS: no level of Part B is saturated, and every run is
+stable (no dropped request); the gateway was not throttled in any 1-minute
+window (0.0 % at 50 and 100 req/s, against the threshold of 21.7 %).
+
+**H7.5.** Holds for EKS: C6 adds +3.64 ms, within +2.2 to +8.8 ms. The
+hypothesis is about all measured platforms and is decided when EXP-07 ends.
+
+Part B, median overhead (runs without collapse, n = 3; Kind re-run §14.5 at
+the same rates for comparison):
+
+| Rate req/s | c0 median EKS | Δ c5 EKS | Δ c6 EKS | Δ c5 Kind | Δ c6 Kind |
+| ---------- | ------------- | -------- | -------- | --------- | --------- |
+| 50         | 1.53          | +2.19    | +3.84    | +2.64     | +3.97     |
+| 100        | 1.36          | +1.85    | +3.05    | +2.62 (n = 2) | +4.35 |
+
+Resources on `/health` at 50 req/s (request path): c5 +109 m and +41 Mi, c6
++189 m and +148 Mi against c0 on EKS; on Kind +122 m and +51 Mi, and +251 m and
++304 Mi (§11.5 table).
+
+**Post-hoc: what differs from Kind.** Verdicts and ranking are the same; the
+added latency of the gateway is almost identical (+2.19 against +2.20 ms).
+mTLS costs more on EKS (+0.41 against +0.23 ms), all controls together less
+(+3.64 against +4.39 ms). Absolute latencies are lower on EKS although the
+nodes have 2 vCPU: on Kind the cluster and k6 share one host. Following §16.5
+these differences are reported, not assigned to one cause.

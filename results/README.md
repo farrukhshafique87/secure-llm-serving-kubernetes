@@ -21,6 +21,8 @@ The overhead tables come from [`exp-06-final/overhead-summary.md`](exp-06-final/
 | `exp-04-pilot` | EXP-04 pilot: c5 at 500 m and 1000 m, 70 and 100 req/s, 1 run each, to check the setup | Pilot, not used for conclusions |
 | `exp-05-security-verification` | EXP-05: evidence that each control works (RBAC, NetworkPolicy, mTLS, all controls); `k8s-1.36/`: re-run on Kubernetes v1.36.4 with live TLS and gateway checks, all 7 configurations; `eks/`: the same checks on Amazon EKS (EXP-07, 40 of 40 pass) | Final |
 | `exp-06-final` | EXP-06: 7 configurations x 3 repetitions, interleaved. Source of the overhead tables | Final |
+| `exp-07-eks` | EXP-07 Part A on Amazon EKS (eu-north-1, 2 x m7i-flex.large): 7 configurations, `/chat` and `/health`, 3 repetitions, `MONITOR=0`; `overhead-summary.md` | Final |
+| `exp-07-eks-load` | EXP-07 Part B on EKS: `/health` at 50 and 100 req/s for c0, c5, c6, 3 repetitions, `MONITOR=1`, with throttling and host CPU (of the k6 VM) per run | Final |
 
 ## Files per run
 

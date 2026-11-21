@@ -1,0 +1,69 @@
+# Environment record - 2026-11-21T09:07:34Z
+## Host
+Linux ip-192-168-28-99 7.0.0-1018-aws #19~24.04.1-Ubuntu SMP PREEMPT Thu Nov 12 17:17:32 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+CPU cores: 2
+               total        used        free      shared  buff/cache   available
+Mem:           7.6Gi       609Mi       5.4Gi       2.9Mi       1.8Gi       7.0Gi
+## Tool versions
+platform=cloud
+./scripts/record-environment.sh: line 19: docker: command not found
+./scripts/record-environment.sh: line 20: kind: command not found
+Client Version: v1.36.4
+Kustomize Version: v5.8.1
+Server Version: v1.36.5-eks-91f89a9
+v3.21.3+g1ad6e68
+k6 v2.0.0 (commit/8c3be52cc1, go1.26.3, linux/amd64)
+## Cluster
+thesis-eks
+NAME                                            STATUS   ROLES    AGE    VERSION               INTERNAL-IP      EXTERNAL-IP     OS-IMAGE                        KERNEL-VERSION                            CONTAINER-RUNTIME
+ip-192-168-28-144.eu-north-1.compute.internal   Ready    <none>   154m   v1.36.5-eks-9adbfea   192.168.28.144   51.20.77.12     Amazon Linux 2023.12.20261118   6.18.62-127.179.amzn2023.x86_64 (amd64)   containerd://2.3.7+unknown
+ip-192-168-31-162.eu-north-1.compute.internal   Ready    <none>   154m   v1.36.5-eks-9adbfea   192.168.31.162   51.20.253.202   Amazon Linux 2023.12.20261118   6.18.62-127.179.amzn2023.x86_64 (amd64)   containerd://2.3.7+unknown
+## Namespace llm-c4-tls: workloads, images, resources
+NAME                      READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES                                                                                                      SELECTOR
+deployment.apps/fastapi   1/1     1            1           88m   fastapi      ghcr.io/farrukhshafique87/llm-api@sha256:58870146dfad96c46d2e08b88e39affbc1953fae5a95cdf307aac05f6f1966a0   app.kubernetes.io/instance=fastapi,app.kubernetes.io/name=llm-api
+deployment.apps/ollama    1/1     1            1           88m   ollama       ollama/ollama@sha256:292ee7945dfc3d5840a181f3ab86fedb1e66703e02c8af98b50f4da56b7e278c                       app=ollama
+
+NAME                      TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)     AGE   SELECTOR
+service/fastapi-service   ClusterIP   10.100.222.47    <none>        8010/TCP    88m   app.kubernetes.io/name=llm-api
+service/ollama-service    ClusterIP   10.100.116.172   <none>        11434/TCP   88m   app=ollama
+
+NAME                               STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE   VOLUMEMODE
+persistentvolumeclaim/ollama-pvc   Bound    pvc-b3078284-e416-49b2-9316-fdb73536c8e4   15Gi       RWO            gp3            <unset>                 88m   Filesystem
+
+NAME                           READY   STATUS    RESTARTS   AGE   IP              NODE                                            NOMINATED NODE   READINESS GATES
+pod/fastapi-7f9bfd5c8c-m2xmk   1/1     Running   0          24s   192.168.0.245   ip-192-168-28-144.eu-north-1.compute.internal   <none>           <none>
+pod/ollama-86445c58c5-8sgc8    1/1     Running   0          24s   192.168.20.42   ip-192-168-31-162.eu-north-1.compute.internal   <none>           <none>
+fastapi image=ghcr.io/farrukhshafique87/llm-api@sha256:58870146dfad96c46d2e08b88e39affbc1953fae5a95cdf307aac05f6f1966a0 resources={"limits":{"cpu":"1","memory":"1Gi"},"requests":{"cpu":"500m","memory":"512Mi"}}
+ollama image=ollama/ollama@sha256:292ee7945dfc3d5840a181f3ab86fedb1e66703e02c8af98b50f4da56b7e278c resources={"limits":{"cpu":"2","memory":"4Gi"},"requests":{"cpu":"1","memory":"2Gi"}}
+## Model
+NAME            ID              SIZE      MODIFIED          
+qwen2.5:0.5b    a8b0c5157701    397 MB    About an hour ago    
+ollama version is 0.35.1
+## Controlled inference parameters
+{"APP_NAME":"LLM API","LLM_KEEP_ALIVE":"24h","LLM_NUM_PREDICT":"64","LLM_SEED":"42","LLM_TEMPERATURE":"0.0","LOG_LEVEL":"INFO","OLLAMA_MAX_ATTEMPTS":"1","OLLAMA_MODEL":"qwen2.5:0.5b","OLLAMA_URL":"http://ollama-service:11434","REQUEST_TIMEOUT":"120","VERSION":"1.0.0"}
+## Network policies / CNI
+No resources found in llm-c4-tls namespace.
+NAME                                       READY   STATUS    RESTARTS   AGE
+calico-kube-controllers-6689cf48d7-bc8wb   1/1     Running   0          152m
+calico-node-7q8xt                          1/1     Running   0          152m
+calico-node-zpsgw                          1/1     Running   0          152m
+calico-typha-569f65c55c-l9sq8              1/1     Running   0          152m
+calico version: v3.32.2
+calico-node image=quay.io/calico/node:v3.32.2
+## Ingress controller / gateway / metrics server
+NAME   	NAMESPACE	REVISION	UPDATED                                	STATUS  	CHART         	APP VERSION
+traefik	traefik  	2       	2026-11-21 07:23:31.335035251 +0000 UTC	deployed	traefik-41.6.1	v3.7.13    
+traefik image=docker.io/traefik:v3.7.13
+Error from server (NotFound): deployments.apps "gateway" not found
+NAME                 	NAMESPACE	REVISION	UPDATED                                	STATUS  	CHART                          	APP VERSION 
+linkerd-control-plane	linkerd  	1       	2026-11-21 07:15:48.969470329 +0000 UTC	deployed	linkerd-control-plane-2026.10.1	edge-26.10.1
+linkerd-crds         	linkerd  	1       	2026-11-21 07:15:45.147350691 +0000 UTC	deployed	linkerd-crds-2026.10.1         	            
+linkerd-destination image=cr.l5d.io/linkerd/controller:edge-26.10.1
+linkerd-identity image=cr.l5d.io/linkerd/controller:edge-26.10.1
+linkerd-proxy-injector image=cr.l5d.io/linkerd/controller:edge-26.10.1
+metrics-server image=registry.k8s.io/metrics-server/metrics-server:v0.9.0
+NAME          CLASS     HOSTS       ADDRESS                                                                    PORTS     AGE
+llm-ingress   traefik   localhost   aabfbbbd36f4d447d9669d9224be5031-1565308945.eu-north-1.elb.amazonaws.com   80, 443   33s
+## Git
+059f4b9368bee1c835403837e9a2b575cfeae160
+?? results/exp-07-eks/
