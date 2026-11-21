@@ -1076,7 +1076,8 @@ Every platform has two worker nodes labelled `role=inference` and `role=api`,
 each with 4 vCPU and 16 GiB (x86-64). k6 runs on a separate VM with 4 vCPU in
 the same region and network. On that VM, `scripts/cloud-entry.sh` maps
 `localhost:8010`, `:8080` and `:8443` in the kernel to NodePort 30010 and to
-Traefik's host ports 80 and 443 on the `role=api` node, as Docker maps them to
+Traefik's host ports 8000 and 443 on the `role=api` node (8000 instead of 80,
+which EKS reserves on every node), as Docker maps them to
 the Kind node; URLs, the ingress host and the TLS certificate therefore stay as
 on Kind. No cloud load balancer is in the measured path.
 

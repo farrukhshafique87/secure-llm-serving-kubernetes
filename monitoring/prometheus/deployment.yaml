@@ -23,6 +23,10 @@ spec:
         app: prometheus
     spec:
       serviceAccountName: prometheus
+      # Prometheus runs as "nobody" (65534); fsGroup makes the data volume
+      # writable for it on disks that belong to root (EBS on EKS).
+      securityContext:
+        fsGroup: 65534
       containers:
         - name: prometheus
           image: prom/prometheus:v3.5.0

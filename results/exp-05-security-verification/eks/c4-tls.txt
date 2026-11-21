@@ -1,0 +1,8 @@
+Waiting for all pods in llm-c4-tls to be Ready...
+== TLS at the ingress
+PASS  entry presents the lab certificate
+PASS  HTTPS request reaches the service (200)
+PASS  plain HTTP on the TLS port is not served (no 200)
+PASS  plain HTTP entrypoint does not route to the service (no 200)
+
+passed: 4  failed: 0
