@@ -1,0 +1,13 @@
+# Default StorageClass on EKS: the base PersistentVolumeClaim names no class,
+# and EKS marks none as default. gp3 through the EBS CSI driver.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: gp3
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: ebs.csi.aws.com
+parameters:
+  type: gp3
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete

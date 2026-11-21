@@ -1099,6 +1099,13 @@ metrics-server is installed in the version used on Kind where the platform has
 none; where the platform runs its own, that one is used and its version
 recorded.
 
+Recorded before the EKS runs: the AWS account allows only region `eu-north-1`
+and, on its free plan, only small instance types. The EKS nodes and the k6 VM
+are therefore `m7i-flex.large` (2 vCPU, 8 GiB) instead of 4 vCPU and 16 GiB;
+flex instances guarantee 40 % of each vCPU and may run at full speed most of
+the time. Cluster: EKS 1.36 (nodes v1.36.5), both nodes and the k6 VM in zone
+`eu-north-1a`; setup and teardown in `cloud/eks-up.sh` and `cloud/eks-down.sh`.
+
 Before the runs on a platform: the EXP-05 verification on that cluster (all
 checks pass). The scripts select the `cloud-*` overlays with `PLATFORM=cloud`;
 Traefik is installed with `TRAEFIK_VALUES=cloud/traefik-values.yaml`. No change

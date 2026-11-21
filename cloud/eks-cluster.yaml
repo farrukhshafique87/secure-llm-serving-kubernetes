@@ -1,0 +1,57 @@
+# EXP-07 on Amazon EKS (methodology §16). Created by cloud/eks-up.sh.
+# eu-north-1 is the region the AWS project allows. Two managed node groups of
+# one node each, labelled like the Kind workers; both nodes, and the k6 VM, in
+# the same zone. m7i-flex.large (2 vCPU, 8 GiB) is the largest instance type the
+# AWS Free plan allows; §16 plans 4 vCPU and 16 GiB (recorded deviation).
+# Public subnets and no NAT gateway: nothing in the measured path needs one,
+# and it would cost money while idle.
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: thesis-eks
+  region: eu-north-1
+  version: "1.36"
+  tags:
+    project: thesis-exp07
+
+availabilityZones: ["eu-north-1a", "eu-north-1b"]
+
+vpc:
+  nat:
+    gateway: Disable
+
+accessConfig:
+  authenticationMode: API_AND_CONFIG_MAP
+
+addonsConfig:
+  autoApplyPodIdentityAssociations: true
+
+addons:
+  - name: vpc-cni
+  - name: coredns
+  - name: kube-proxy
+  - name: eks-pod-identity-agent
+  # Volumes for Ollama (PersistentVolumeClaim of the base manifests).
+  - name: aws-ebs-csi-driver
+    useDefaultPodIdentityAssociations: true
+
+managedNodeGroups:
+  - name: inference
+    instanceType: m7i-flex.large
+    desiredCapacity: 1
+    minSize: 1
+    maxSize: 1
+    availabilityZones: ["eu-north-1a"]
+    volumeSize: 50
+    labels:
+      role: inference
+  - name: api
+    instanceType: m7i-flex.large
+    desiredCapacity: 1
+    minSize: 1
+    maxSize: 1
+    availabilityZones: ["eu-north-1a"]
+    volumeSize: 50
+    labels:
+      role: api

@@ -1,0 +1,12 @@
+# Calico for NetworkPolicy only, on top of the Amazon VPC CNI (methodology §16).
+# The VPC CNI keeps pod networking; Calico enforces the policies, as on Kind.
+apiVersion: operator.tigera.io/v1
+kind: Installation
+metadata:
+  name: default
+spec:
+  kubernetesProvider: EKS
+  cni:
+    type: AmazonVPC
+  calicoNetwork:
+    bgp: Disabled
